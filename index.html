@@ -9,27 +9,27 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
-  --bg: #F7F5F0;
+  --bg: #EAF7FA;
   --surface: #FFFFFF;
-  --surface2: #F0EDE8;
-  --border: #E2DDD5;
-  --text: #1A1714;
-  --text2: #6B6560;
-  --text3: #9E9891;
-  --accent: #2D5A3D;
-  --accent2: #4A7C5C;
-  --accent-light: #E8F2EB;
-  --red: #C0392B;
-  --red-light: #FDECEA;
-  --blue: #1A4A7A;
-  --blue-light: #EAF0F8;
-  --gold: #B8860B;
-  --gold-light: #FDF6E3;
-  --humi: #5B3FA6;
-  --humi-light: #F0EAFF;
-  --today: #2D5A3D;
-  --shadow: 0 2px 12px rgba(0,0,0,0.06);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+  --surface2: #DDF1F5;
+  --border: #B7DCE4;
+  --text: #08313F;
+  --text2: #3F6873;
+  --text3: #7DA3AD;
+  --accent: #007C89;
+  --accent2: #005D73;
+  --accent-light: #D8F3F5;
+  --red: #B42318;
+  --red-light: #FFE8E4;
+  --blue: #075985;
+  --blue-light: #DCEFFC;
+  --gold: #9A6A00;
+  --gold-light: #FFF5D8;
+  --humi: #0E7490;
+  --humi-light: #E0F7FF;
+  --today: #007C89;
+  --shadow: 0 3px 14px rgba(0,93,115,0.12);
+  --shadow-lg: 0 10px 36px rgba(0,93,115,0.18);
   --radius: 12px;
   --radius-sm: 8px;
 }
@@ -38,27 +38,31 @@
 
 body {
   font-family: 'Noto Sans KR', sans-serif;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at top left, rgba(85, 190, 205, 0.22), transparent 34rem),
+    linear-gradient(180deg, #EAFBFF 0%, var(--bg) 40%, #F5FCFD 100%);
   color: var(--text);
   min-height: 100vh;
+  font-size: 21px;
+  line-height: 1.55;
 }
 
 /* ── Header ── */
 .app-header {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
   color: white;
-  padding: 0 24px;
+  padding: 0 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 60px;
+  height: 78px;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 16px rgba(45,90,61,0.25);
+  box-shadow: 0 2px 18px rgba(0,93,115,0.26);
 }
-.app-header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
-.app-header .subtitle { font-size: 11px; opacity: 0.75; font-weight: 300; margin-top: 2px; }
+.app-header h1 { font-size: 24px; font-weight: 800; letter-spacing: 0; }
+.app-header .subtitle { font-size: 17px; opacity: 0.85; font-weight: 500; margin-top: 2px; }
 
 /* ── Nav Tabs ── */
 .nav-tabs {
@@ -268,6 +272,33 @@ body {
 }
 .duty-chip.manual {
   border-style: dashed;
+}
+.duty-edit-btn {
+  margin-top: 4px;
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.duty-edit-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+.team-business { background: #EFE7FF !important; color: #5B3FA6 !important; border-color: #D8C7FF !important; }
+.team-admin { background: #FFF7C7 !important; color: #756000 !important; border-color: #F1DD72 !important; }
+.team-support { background: #DFF4FF !important; color: #075985 !important; border-color: #9BD7F2 !important; }
+.team-select {
+  max-width: 132px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .modal-backdrop {
@@ -729,6 +760,44 @@ body {
   .page { display: block !important; padding: 0; }
   .cal-cell { min-height: 60px; }
 }
+
+/* Larger ocean theme readability overrides */
+.nav-tabs { top: 78px; padding: 0 20px; }
+.nav-tab { padding: 18px 24px; font-size: 20px; font-weight: 700; gap: 8px; }
+.nav-tab .badge { font-size: 15px; padding: 2px 8px; }
+.page { padding: 28px; max-width: 1320px; }
+.section-title { font-size: 30px; letter-spacing: 0; }
+.section-sub { font-size: 20px; margin-bottom: 28px; }
+.month-nav button, .btn, .input-field, .filter-row select { font-size: 20px; }
+.month-nav button, .btn { padding: 11px 18px; }
+.btn-sm { padding: 7px 12px; font-size: 16px; }
+.month-nav .month-label { font-size: 32px; min-width: 170px; }
+.month-jump-btn { font-size: 18px; padding: 8px 13px; }
+.cal-header-cell { font-size: 18px; padding: 13px 4px; }
+.cal-cell { min-height: 116px; padding: 9px; }
+.cal-date { font-size: 20px; width: 34px; height: 34px; }
+.holiday-label { font-size: 15px; }
+.duty-chip { font-size: 17px; padding: 4px 9px; border-radius: 14px; }
+.today-banner { padding: 22px 26px; }
+.today-banner .today-date { font-size: 34px; }
+.today-banner .today-day, .today-duties .label { font-size: 17px; }
+.today-duties .name { font-size: 23px; }
+.no-duty { font-size: 21px; }
+.legend-item, .filter-row label { font-size: 18px; }
+.card-header, .modal-header { font-size: 21px; }
+.card-body, .modal-body { font-size: 20px; }
+.emp-name, .holiday-name, .change-name, .duty-item .text, .seq-table, .config-help { font-size: 20px; }
+.emp-num, .duty-item .num, .setting-item .order { font-size: 16px; width: 34px; height: 34px; }
+.summary-chip .label, .config-field label, .change-date, .change-type, .holiday-date { font-size: 17px; }
+.summary-chip .value { font-size: 24px; }
+.seq-table .hyu-badge, .seq-table .ga-badge, .seq-table .holiday-badge, .seq-table .weekend-badge { font-size: 16px; padding: 4px 10px; }
+@media (max-width: 700px) {
+  .nav-tabs { top: 78px; }
+  .page { padding: 18px; }
+  .cal-cell { min-height: 96px; padding: 7px; }
+  .cal-date { font-size: 18px; width: 30px; height: 30px; }
+  .duty-chip { font-size: 15px; padding: 3px 7px; }
+}
 </style>
 </head>
 <body>
@@ -1123,6 +1192,7 @@ function loadData() {
 function saveData() {
   localStorage.setItem('danbun_v2', JSON.stringify({
     employees: state.employees,
+    employeeTeams: state.employeeTeams,
     holidays: state.holidays,
     personnelChanges: state.personnelChanges,
     manualDuties: state.manualDuties,
@@ -1138,6 +1208,7 @@ function saveData() {
 // state는 JSON 로드 후 채워짐
 const state = {
   employees: [],
+  employeeTeams: {},
   holidays: [],
   personnelChanges: [],
   manualDuties: {},
@@ -1175,6 +1246,7 @@ function buildSettingsPayload() {
     version: 3,
     exportedAt: new Date().toISOString(),
     employees: state.employees,
+    employeeTeams: state.employeeTeams,
     holidays: state.holidays,
     personnelChanges: state.personnelChanges,
     manualDuties: state.manualDuties,
@@ -1189,6 +1261,7 @@ function buildSettingsPayload() {
 
 function applySettingsPayload(data) {
   if (data.employees && !Array.isArray(data.employees)) throw new Error('employees');
+  if (data.employeeTeams && typeof data.employeeTeams !== 'object') throw new Error('employeeTeams');
   if (data.holidays && !Array.isArray(data.holidays)) throw new Error('holidays');
   if (data.personnelChanges && !Array.isArray(data.personnelChanges)) throw new Error('personnelChanges');
   if (data.manualDuties && typeof data.manualDuties !== 'object') throw new Error('manualDuties');
@@ -1199,6 +1272,7 @@ function applySettingsPayload(data) {
     if (!employees.length) throw new Error('employees empty');
     state.employees = employees;
   }
+  if (data.employeeTeams) state.employeeTeams = data.employeeTeams;
   if (data.holidays) state.holidays = data.holidays.filter(h => h?.date && h?.name);
   if (data.personnelChanges) {
     state.personnelChanges = data.personnelChanges
@@ -1240,6 +1314,25 @@ function nextEmployeeName(currentName, employees, step) {
   const idx = employees.indexOf(currentName);
   if (idx === -1) return step >= 0 ? employees[0] : employees[employees.length - 1];
   return employees[(idx + step + employees.length) % employees.length];
+}
+
+function getEmployeeTeam(name) {
+  return state.employeeTeams?.[name] || '';
+}
+
+function getTeamClass(name) {
+  const team = getEmployeeTeam(name);
+  if (team === '사업팀') return 'team-business';
+  if (team === '행정팀') return 'team-admin';
+  if (team === '활동지원팀') return 'team-support';
+  return '';
+}
+
+function teamOptions(selectedTeam = '') {
+  return ['', '사업팀', '행정팀', '활동지원팀'].map(team => {
+    const label = team || '팀 없음';
+    return `<option value="${team}" ${team === selectedTeam ? 'selected' : ''}>${label}</option>`;
+  }).join('');
 }
 
 // 시작점 기준으로 특정 날짜의 당번 이름 계산
@@ -1386,16 +1479,26 @@ function renderCalendar() {
 
     if (duty) {
       const hyuChip = document.createElement('div');
-      hyuChip.className = 'duty-chip hyu' + (duty.manual ? ' manual' : '');
+      hyuChip.className = ['duty-chip', 'hyu', getTeamClass(duty.hyu), duty.manual ? 'manual' : ''].filter(Boolean).join(' ');
       hyuChip.textContent = `🏠 ${duty.hyu}`;
       cell.appendChild(hyuChip);
 
       if (duty.ga) {
         const gaChip = document.createElement('div');
-        gaChip.className = 'duty-chip ga' + (duty.manual ? ' manual' : '');
+        gaChip.className = ['duty-chip', 'ga', getTeamClass(duty.ga), duty.manual ? 'manual' : ''].filter(Boolean).join(' ');
         gaChip.textContent = `💧 ${duty.ga}`;
         cell.appendChild(gaChip);
       }
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'duty-edit-btn';
+      editBtn.type = 'button';
+      editBtn.textContent = '변경';
+      editBtn.onclick = ev => {
+        ev.stopPropagation();
+        openManualDutyModal(ds);
+      };
+      cell.appendChild(editBtn);
     }
 
     grid.appendChild(cell);
@@ -1542,8 +1645,8 @@ function renderSequence() {
         noteCell = `<span class="weekend-badge">${dow===0?'일':'토'}요일</span>`;
         hyuCell = '-'; gaCell = '-';
       } else if (duty) {
-        hyuCell = `<span class="hyu-badge">🏠 ${escapeHtml(duty.hyu)}</span>`;
-        gaCell = duty.ga ? `<span class="ga-badge">💧 ${escapeHtml(duty.ga)}</span>` : '-';
+        hyuCell = `<span class="hyu-badge ${getTeamClass(duty.hyu)}">🏠 ${escapeHtml(duty.hyu)}</span>`;
+        gaCell = duty.ga ? `<span class="ga-badge ${getTeamClass(duty.ga)}">💧 ${escapeHtml(duty.ga)}</span>` : '-';
         if (duty.manual) noteCell = `<span style="background:var(--gold-light);color:var(--gold);padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">직접 변경</span>`;
         if (ds === todayStr) noteCell += `<span style="background:var(--accent);color:white;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;margin-left:4px">오늘</span>`;
       }
@@ -1862,6 +1965,9 @@ function renderEmployees() {
     li.innerHTML = `
       <div class="emp-num">${idx+1}</div>
       <div class="emp-name">${escapeHtml(name)}</div>
+      <select class="team-select ${getTeamClass(name)}" onchange="updateEmployeeTeam(${idx}, this.value)">
+        ${teamOptions(getEmployeeTeam(name))}
+      </select>
       <div class="emp-actions">
         <button class="btn btn-sm btn-ghost" onclick="moveEmployee(${idx},-1)" title="위로">↑</button>
         <button class="btn btn-sm btn-ghost" onclick="moveEmployee(${idx},1)" title="아래로">↓</button>
@@ -1897,15 +2003,25 @@ function addEmployee() {
   if (!name) return showToast('이름을 입력하세요');
   if (state.employees.includes(name)) return showToast('이미 있는 직원입니다');
   state.employees.push(name);
+  state.employeeTeams[name] = '';
   input.value = '';
   saveData(); rebuildSchedule(); renderAll();
   showToast(`${name} 추가 완료`);
+}
+function updateEmployeeTeam(idx, team) {
+  const name = state.employees[idx];
+  if (!name) return;
+  if (team) state.employeeTeams[name] = team;
+  else delete state.employeeTeams[name];
+  saveData(); renderAll();
+  showToast('직원 팀 설정 저장 완료');
 }
 function removeEmployee(idx) {
   if (state.employees.length <= 1) return showToast('최소 1명 필요');
   const name = state.employees[idx];
   if (!confirm(`${name}을(를) 삭제할까요?`)) return;
   state.employees.splice(idx, 1);
+  delete state.employeeTeams[name];
   normalizeStartPoint();
   saveData(); rebuildSchedule(); renderAll();
   showToast(`${name} 삭제 완료`);
@@ -1930,6 +2046,7 @@ function reorderEmployee(fromIdx, toIdx) {
 function resetEmployees() {
   if (!confirm('직원 목록을 초기값으로 되돌릴까요?')) return;
   state.employees = [...DEFAULT_EMPLOYEES];
+  state.employeeTeams = {};
   normalizeStartPoint();
   saveData(); rebuildSchedule(); renderAll();
   showToast('직원 목록 초기화 완료');
@@ -2063,6 +2180,7 @@ function clearSavedData() {
   if (!confirm('브라우저에 저장된 설정값을 삭제하고 기본값으로 되돌릴까요?')) return;
   localStorage.removeItem('danbun_v2');
   state.employees = [...DEFAULT_EMPLOYEES];
+  state.employeeTeams = {};
   state.holidays = [...DEFAULT_HOLIDAYS];
   state.personnelChanges = [];
   state.manualDuties = {};
@@ -2147,6 +2265,7 @@ function renderAll() {
   // localStorage 우선 적용
   const saved = loadData();
   state.employees  = saved?.employees  || [...DEFAULT_EMPLOYEES];
+  state.employeeTeams = saved?.employeeTeams || {};
   state.holidays   = saved?.holidays   || [...DEFAULT_HOLIDAYS];
   state.personnelChanges = saved?.personnelChanges || [];
   state.manualDuties = saved?.manualDuties || {};
