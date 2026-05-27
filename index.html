@@ -6,6 +6,7 @@
 <title>구로자립생활센터 당번표</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --bg: #F7F5F0;
@@ -337,6 +338,7 @@ body {
 /* ── Settings ── */
 .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 @media (max-width: 700px) { .settings-grid { grid-template-columns: 1fr; } }
+.wide-card { grid-column: 1 / -1; }
 
 .card {
   background: var(--surface);
@@ -419,6 +421,108 @@ body {
 }
 .input-field:focus { outline: none; border-color: var(--accent); }
 
+.settings-summary {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+.summary-chip {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.summary-chip .label { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+.summary-chip .value { font-size: 16px; font-weight: 900; color: var(--accent); }
+.month-check-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+.check-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.check-pill:has(input:checked) {
+  background: var(--humi-light);
+  border-color: var(--humi);
+  color: var(--humi);
+}
+.duty-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.duty-editor-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.setting-list { list-style: none; max-height: 320px; overflow-y: auto; }
+.setting-item {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 8px;
+  align-items: start;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.setting-item .order {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.setting-fields { display: grid; gap: 6px; }
+.setting-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.setting-note {
+  width: 100%;
+  min-height: 54px;
+  resize: vertical;
+}
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.config-field label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text2);
+  display: block;
+  margin-bottom: 4px;
+}
+.config-help {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text2);
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-top: 12px;
+}
+@media (max-width: 900px) {
+  .settings-summary, .duty-editor-grid, .config-grid { grid-template-columns: 1fr; }
+  .month-check-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
 /* Holiday */
 .holiday-item {
   display: flex;
@@ -431,6 +535,31 @@ body {
 }
 .holiday-date { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--red); font-weight: 500; }
 .holiday-name { font-size: 13px; font-weight: 600; flex: 1; }
+.change-item {
+  display: grid;
+  grid-template-columns: 86px 96px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 4px;
+  background: var(--blue-light);
+}
+.change-date { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--blue); font-weight: 600; }
+.change-type {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 8px;
+  width: fit-content;
+}
+.change-type.join { background: var(--accent-light); color: var(--accent); }
+.change-type.leave { background: var(--red-light); color: var(--red); }
+.change-name { font-size: 13px; font-weight: 700; }
+@media (max-width: 700px) {
+  .change-item { grid-template-columns: 1fr auto; }
+  .change-date, .change-type, .change-name { grid-column: 1; }
+}
 
 /* ── Sequence Table ── */
 .seq-table-wrap {
@@ -579,7 +708,7 @@ body {
 
   <div class="legend">
     <div class="legend-item"><div class="legend-dot" style="background:var(--accent-light);border:1px solid #c5e0cb"></div> 휴게실 당번</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--humi-light);border:1px solid #d4c4f5"></div> 가습기 당번 (9~1월)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--humi-light);border:1px solid #d4c4f5"></div> <span id="humiLegendText">가습기 당번 (9~1월)</span></div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--red-light);border:1px solid #f5c6c2"></div> 공휴일</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div> 오늘</div>
   </div>
@@ -661,7 +790,7 @@ body {
 
   <div class="duty-guide-card">
     <div class="duty-guide-header" onclick="toggleGuide(this)" style="background:linear-gradient(135deg,#3B2070,var(--humi))">
-      <h3>💧 가습기 당번 업무 (9월~1월)</h3>
+      <h3 id="humiDutyTitle">💧 가습기 당번 업무 (9월~1월)</h3>
       <span class="toggle-icon">▼</span>
     </div>
     <div class="duty-guide-body open">
@@ -683,9 +812,78 @@ body {
 <!-- ═══ TAB: 설정 ═══ -->
 <div class="page" id="page-settings">
   <div class="section-title">설정</div>
-  <div class="section-sub">직원, 공휴일, 당번 시작점을 관리하세요</div>
+  <div class="section-sub">직원, 공휴일, 당번 시작점, 가습기 적용 월, 업무 내용을 관리하세요</div>
 
   <div class="settings-grid">
+    <div class="card wide-card">
+      <div class="card-header">📌 현재 설정값</div>
+      <div class="card-body">
+        <div class="settings-summary">
+          <div class="summary-chip"><div class="label">직원</div><div class="value" id="summaryEmployees">0명</div></div>
+          <div class="summary-chip"><div class="label">공휴일</div><div class="value" id="summaryHolidays">0개</div></div>
+          <div class="summary-chip"><div class="label">인사 변경</div><div class="value" id="summaryPersonnelChanges">0건</div></div>
+          <div class="summary-chip"><div class="label">가습기 월</div><div class="value" id="summaryHumiMonths">-</div></div>
+          <div class="summary-chip"><div class="label">시작점</div><div class="value" id="summaryStartPoint">-</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card wide-card">
+      <div class="card-header">
+        ☁️ 공동 수정·배포 연동값
+        <button class="btn btn-sm btn-ghost" onclick="saveIntegrationConfig()">저장</button>
+      </div>
+      <div class="card-body">
+        <div class="config-grid">
+          <div class="config-field">
+            <label for="supabaseUrl">Supabase Project URL</label>
+            <input class="input-field" id="supabaseUrl" placeholder="https://프로젝트.supabase.co">
+          </div>
+          <div class="config-field">
+            <label for="supabaseAnonKey">Supabase anon public key</label>
+            <input class="input-field" id="supabaseAnonKey" placeholder="eyJhbGciOi..." autocomplete="off">
+          </div>
+          <div class="config-field">
+            <label for="supabaseTable">Supabase table</label>
+            <input class="input-field" id="supabaseTable" value="danbun_settings">
+          </div>
+          <div class="config-field">
+            <label for="supabaseRecordId">Supabase record id</label>
+            <input class="input-field" id="supabaseRecordId" value="guro_dangbun">
+          </div>
+          <div class="config-field">
+            <label for="githubOwner">GitHub owner</label>
+            <input class="input-field" id="githubOwner" value="kittycong">
+          </div>
+          <div class="config-field">
+            <label for="githubRepo">GitHub repo</label>
+            <input class="input-field" id="githubRepo" value="guro_dangbun">
+          </div>
+          <div class="config-field">
+            <label for="githubBranch">GitHub branch</label>
+            <input class="input-field" id="githubBranch" value="main2">
+          </div>
+          <div class="config-field">
+            <label for="githubDataPath">배포 데이터 파일</label>
+            <input class="input-field" id="githubDataPath" value="danbun_data.json">
+          </div>
+          <div class="config-field">
+            <label for="githubPagesUrl">GitHub Pages URL</label>
+            <input class="input-field" id="githubPagesUrl" value="https://kittycong.github.io/guro_dangbun/">
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="saveSharedSettings()">Supabase에 공유 저장</button>
+          <button class="btn btn-ghost" onclick="loadSharedSettings()">Supabase에서 불러오기</button>
+          <button class="btn btn-ghost" onclick="testSupabaseConnection()">연결 테스트</button>
+        </div>
+        <div class="config-help">
+          Supabase 테이블 예시: <code>id text primary key</code>, <code>data jsonb not null</code>, <code>updated_at timestamptz</code>.
+          브라우저에는 공개 가능한 anon key만 입력하세요. GitHub 토큰은 브라우저에 저장하지 않습니다.
+        </div>
+      </div>
+    </div>
+
     <!-- 직원 관리 -->
     <div class="card">
       <div class="card-header">
@@ -718,6 +916,24 @@ body {
       </div>
     </div>
 
+    <!-- 인사 변경 관리 -->
+    <div class="card wide-card">
+      <div class="card-header">🧑‍💼 입사·퇴사 반영일 관리</div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">입사자는 반영일부터 당번에 투입되고, 퇴사자는 반영일부터 당번에서 제외됩니다.</p>
+        <ul id="personnelChangeList" style="list-style:none;max-height:220px;overflow-y:auto"></ul>
+        <div class="input-row" style="flex-wrap:wrap">
+          <input class="input-field" type="date" id="newChangeDate" style="max-width:160px">
+          <select class="input-field" id="newChangeType" style="max-width:120px">
+            <option value="join">입사</option>
+            <option value="leave">퇴사</option>
+          </select>
+          <input class="input-field" id="newChangeName" placeholder="직원 이름" maxlength="10" style="max-width:160px">
+          <button class="btn btn-primary" onclick="addPersonnelChange()">추가</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 시작점 설정 -->
     <div class="card">
       <div class="card-header">🔄 당번 시작점 설정</div>
@@ -739,21 +955,49 @@ body {
     <div class="card">
       <div class="card-header">💧 가습기 당번 설정</div>
       <div class="card-body">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">가습기 당번 = 휴게실 당번의 다음 순서 직원이 담당합니다. (오전: 총 3개 가습기 청소 및 물보충)</p>
-        <div style="background:var(--humi-light);padding:12px;border-radius:var(--radius-sm);border:1px solid #d4c4f5">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">가습기 당번 = 휴게실 당번의 다음 순서 직원이 담당합니다. 적용 월은 직접 변경할 수 있습니다.</p>
+        <div style="background:var(--humi-light);padding:12px;border-radius:var(--radius-sm);border:1px solid #d4c4f5;margin-bottom:12px">
           <div style="font-size:13px;color:var(--humi);font-weight:600">📅 가습기 당번 적용 기간</div>
-          <div style="font-size:13px;margin-top:6px">9월, 10월, 11월, 12월, 1월 (5개월)</div>
+          <div style="font-size:13px;margin-top:6px" id="humiMonthSummary">9월, 10월, 11월, 12월, 1월 (5개월)</div>
         </div>
+        <div class="month-check-grid" id="humiMonthChecks"></div>
         <div style="margin-top:12px;background:var(--surface2);padding:12px;border-radius:var(--radius-sm)">
           <div style="font-size:12px;color:var(--text2)">가습기 당번 = 휴게실 당번의 <strong>바로 다음 순서</strong> 직원</div>
         </div>
       </div>
     </div>
+
+    <div class="card wide-card">
+      <div class="card-header">
+        ✅ 당번 업무 문구 관리
+        <button class="btn btn-sm btn-ghost" onclick="resetDutyItems()">초기화</button>
+      </div>
+      <div class="card-body">
+        <div class="duty-editor-grid">
+          <div>
+            <div class="duty-editor-title">공통 당번 업무</div>
+            <ul class="setting-list" id="settingsDutyCommon"></ul>
+            <button class="btn btn-primary btn-sm" onclick="addDutyItem('common')">추가</button>
+          </div>
+          <div>
+            <div class="duty-editor-title">가습기 당번 업무</div>
+            <ul class="setting-list" id="settingsDutyHumi"></ul>
+            <button class="btn btn-primary btn-sm" onclick="addDutyItem('humi')">추가</button>
+          </div>
+          <div>
+            <div class="duty-editor-title">유의사항</div>
+            <ul class="setting-list" id="settingsDutyNotes"></ul>
+            <button class="btn btn-primary btn-sm" onclick="addDutyItem('notes')">추가</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div style="margin-top:16px;display:flex;gap:10px">
+  <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
     <button class="btn btn-ghost" onclick="exportData()">📤 데이터 백업</button>
     <button class="btn btn-ghost" onclick="importData()">📥 데이터 복원</button>
+    <button class="btn btn-danger" onclick="clearSavedData()">저장값 삭제</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
   </div>
 </div>
@@ -768,10 +1012,25 @@ body {
 let DEFAULT_EMPLOYEES = [];
 let DEFAULT_HOLIDAYS = [];
 let DEFAULT_START = { date: '2026-04-01', empIndex: 10 };
+let DEFAULT_HUMI_MONTHS = [9, 10, 11, 12, 1];
+let DEFAULT_DUTY_COMMON_DATA = [];
+let DEFAULT_DUTY_HUMI_DATA = [];
+let DEFAULT_DUTY_NOTES_DATA = [];
 let HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DUTY_COMMON_DATA = [];
 let DUTY_HUMI_DATA = [];
 let DUTY_NOTES_DATA = [];
+let integrationConfig = {
+  supabaseUrl: '',
+  supabaseAnonKey: '',
+  supabaseTable: 'danbun_settings',
+  supabaseRecordId: 'guro_dangbun',
+  githubOwner: 'kittycong',
+  githubRepo: 'guro_dangbun',
+  githubBranch: 'main2',
+  githubDataPath: 'danbun_data.json',
+  githubPagesUrl: 'https://kittycong.github.io/guro_dangbun/',
+};
 
 // ── load/save (localStorage) ──
 function loadData() {
@@ -785,7 +1044,13 @@ function saveData() {
   localStorage.setItem('danbun_v2', JSON.stringify({
     employees: state.employees,
     holidays: state.holidays,
+    personnelChanges: state.personnelChanges,
     startPoint: state.startPoint,
+    humiMonths: HUMI_MONTHS,
+    dutyCommon: DUTY_COMMON_DATA,
+    dutyHumi: DUTY_HUMI_DATA,
+    dutyNotes: DUTY_NOTES_DATA,
+    integrationConfig,
   }));
 }
 
@@ -793,6 +1058,7 @@ function saveData() {
 const state = {
   employees: [],
   holidays: [],
+  personnelChanges: [],
   startPoint: { ...DEFAULT_START },
   viewYear: new Date().getFullYear(),
   viewMonth: new Date().getMonth() + 1,
@@ -816,25 +1082,103 @@ function isHumiMonth(month) {
 }
 function pad2(n) { return String(n).padStart(2,'0'); }
 function dateStr(y,m,d) { return `${y}-${pad2(m)}-${pad2(d)}`; }
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
 
-// 시작점 기준으로 특정 날짜의 당번 인덱스 계산
+function buildSettingsPayload() {
+  return {
+    version: 3,
+    exportedAt: new Date().toISOString(),
+    employees: state.employees,
+    holidays: state.holidays,
+    personnelChanges: state.personnelChanges,
+    startPoint: state.startPoint,
+    humiMonths: HUMI_MONTHS,
+    dutyCommon: DUTY_COMMON_DATA,
+    dutyHumi: DUTY_HUMI_DATA,
+    dutyNotes: DUTY_NOTES_DATA,
+    integrationConfig,
+  };
+}
+
+function applySettingsPayload(data) {
+  if (data.employees && !Array.isArray(data.employees)) throw new Error('employees');
+  if (data.holidays && !Array.isArray(data.holidays)) throw new Error('holidays');
+  if (data.personnelChanges && !Array.isArray(data.personnelChanges)) throw new Error('personnelChanges');
+  if (data.humiMonths && !Array.isArray(data.humiMonths)) throw new Error('humiMonths');
+
+  if (data.employees) {
+    const employees = data.employees.map(String).map(name => name.trim()).filter(Boolean);
+    if (!employees.length) throw new Error('employees empty');
+    state.employees = employees;
+  }
+  if (data.holidays) state.holidays = data.holidays.filter(h => h?.date && h?.name);
+  if (data.personnelChanges) {
+    state.personnelChanges = data.personnelChanges
+      .filter(ch => ch?.date && ch?.name && ['join', 'leave'].includes(ch.type))
+      .map(ch => ({ date: String(ch.date), type: ch.type, name: String(ch.name).trim() }))
+      .filter(ch => ch.name);
+  }
+  if (data.startPoint) state.startPoint = data.startPoint;
+  if (data.humiMonths) HUMI_MONTHS = data.humiMonths.map(Number).filter(m => m >= 1 && m <= 12);
+  if (data.dutyCommon) DUTY_COMMON_DATA = cloneDutyItems(data.dutyCommon);
+  if (data.dutyHumi) DUTY_HUMI_DATA = cloneDutyItems(data.dutyHumi);
+  if (data.dutyNotes) DUTY_NOTES_DATA = cloneDutyItems(data.dutyNotes);
+  if (data.integrationConfig) {
+    integrationConfig = { ...integrationConfig, ...data.integrationConfig };
+  }
+
+  normalizeStartPoint();
+}
+
+function activeEmployeesOn(targetDateStr) {
+  let employees = [...state.employees];
+  const changes = [...(state.personnelChanges || [])]
+    .filter(ch => ch.date <= targetDateStr)
+    .sort((a,b) => a.date.localeCompare(b.date));
+
+  changes.forEach(ch => {
+    const name = String(ch.name || '').trim();
+    if (!name) return;
+    if (ch.type === 'join' && !employees.includes(name)) employees.push(name);
+    if (ch.type === 'leave') employees = employees.filter(emp => emp !== name);
+  });
+
+  return employees;
+}
+
+function nextEmployeeName(currentName, employees, step) {
+  if (!employees.length) return null;
+  const idx = employees.indexOf(currentName);
+  if (idx === -1) return step >= 0 ? employees[0] : employees[employees.length - 1];
+  return employees[(idx + step + employees.length) % employees.length];
+}
+
+// 시작점 기준으로 특정 날짜의 당번 이름 계산
 function buildScheduleMap() {
   // 2025-01-01부터 2027-12-31까지 전체 배정
-  const map = {}; // dateStr -> {hyuIdx, gaIdx}
+  const map = {}; // dateStr -> {hyu, ga}
   const sp = state.startPoint;
   const spDate = new Date(sp.date + 'T00:00:00');
-  let counter = sp.empIndex; // sp.date 날짜의 휴게실 당번 index
+  const startEmployees = activeEmployeesOn(sp.date);
+  let currentName = state.employees[sp.empIndex] || startEmployees[0];
 
   // sp.date 이후로 순방향 채우기
   let cur = new Date(spDate);
-  let c = counter;
   const end = new Date('2027-12-31T00:00:00');
   while (cur <= end) {
     const ds = dateStr(cur.getFullYear(), cur.getMonth()+1, cur.getDate());
     if (!isWeekend(cur) && !isHoliday(ds)) {
-      const n = state.employees.length;
-      map[ds] = { hyuIdx: c % n, gaIdx: (c+1) % n };
-      c++;
+      const active = activeEmployeesOn(ds);
+      if (active.length) {
+        const hyu = active.includes(currentName) ? currentName : active[0];
+        const ga = active[(active.indexOf(hyu) + 1) % active.length];
+        map[ds] = { hyu, ga };
+        currentName = nextEmployeeName(hyu, active, 1);
+      }
     }
     cur.setDate(cur.getDate() + 1);
   }
@@ -842,16 +1186,18 @@ function buildScheduleMap() {
   // sp.date 이전으로 역방향 채우기
   cur = new Date(spDate);
   cur.setDate(cur.getDate() - 1);
-  c = counter - 1;
+  currentName = nextEmployeeName(state.employees[sp.empIndex] || startEmployees[0], activeEmployeesOn(sp.date), -1);
   const start = new Date('2025-01-01T00:00:00');
   while (cur >= start) {
     const ds = dateStr(cur.getFullYear(), cur.getMonth()+1, cur.getDate());
     if (!isWeekend(cur) && !isHoliday(ds)) {
-      const n = state.employees.length;
-      if (c < 0) c = n - 1 + (c % n === 0 ? 0 : n + c % n);
-      const idx = ((c % n) + n) % n;
-      map[ds] = { hyuIdx: idx, gaIdx: (idx+1) % n };
-      c--;
+      const active = activeEmployeesOn(ds);
+      if (active.length) {
+        const hyu = active.includes(currentName) ? currentName : active[active.length - 1];
+        const ga = active[(active.indexOf(hyu) + 1) % active.length];
+        map[ds] = { hyu, ga };
+        currentName = nextEmployeeName(hyu, active, -1);
+      }
     }
     cur.setDate(cur.getDate() - 1);
   }
@@ -865,11 +1211,10 @@ let scheduleMap = {};
 function getDuty(dateStr) {
   const entry = scheduleMap[dateStr];
   if (!entry) return null;
-  const n = state.employees.length;
   const month = parseInt(dateStr.split('-')[1]);
   return {
-    hyu: state.employees[entry.hyuIdx],
-    ga: isHumiMonth(month) ? state.employees[entry.gaIdx] : null,
+    hyu: entry.hyu,
+    ga: isHumiMonth(month) ? entry.ga : null,
   };
 }
 
@@ -947,13 +1292,13 @@ function renderCalendar() {
     if (duty) {
       const hyuChip = document.createElement('div');
       hyuChip.className = 'duty-chip hyu';
-      hyuChip.innerHTML = `🏠 ${duty.hyu}`;
+      hyuChip.textContent = `🏠 ${duty.hyu}`;
       cell.appendChild(hyuChip);
 
       if (duty.ga) {
         const gaChip = document.createElement('div');
         gaChip.className = 'duty-chip ga';
-        gaChip.innerHTML = `💧 ${duty.ga}`;
+        gaChip.textContent = `💧 ${duty.ga}`;
         cell.appendChild(gaChip);
       }
     }
@@ -981,8 +1326,8 @@ function renderTodayBanner(todayStr) {
   } else if (isWknd) {
     inner += `<div class="no-duty">🌿 주말 — 당번 없음</div>`;
   } else if (duty) {
-    inner += `<div class="duty-row"><span class="label">🏠 휴게실</span><span class="name">${duty.hyu}</span></div>`;
-    if (duty.ga) inner += `<div class="duty-row"><span class="label">💧 가습기</span><span class="name">${duty.ga}</span></div>`;
+    inner += `<div class="duty-row"><span class="label">🏠 휴게실</span><span class="name">${escapeHtml(duty.hyu)}</span></div>`;
+    if (duty.ga) inner += `<div class="duty-row"><span class="label">💧 가습기</span><span class="name">${escapeHtml(duty.ga)}</span></div>`;
   }
   inner += `</div>`;
   banner.innerHTML = `<div class="today-banner">${inner}</div>`;
@@ -1052,8 +1397,8 @@ function renderSequence() {
         noteCell = `<span class="weekend-badge">${dow===0?'일':'토'}요일</span>`;
         hyuCell = '-'; gaCell = '-';
       } else if (duty) {
-        hyuCell = `<span class="hyu-badge">🏠 ${duty.hyu}</span>`;
-        gaCell = duty.ga ? `<span class="ga-badge">💧 ${duty.ga}</span>` : '-';
+        hyuCell = `<span class="hyu-badge">🏠 ${escapeHtml(duty.hyu)}</span>`;
+        gaCell = duty.ga ? `<span class="ga-badge">💧 ${escapeHtml(duty.ga)}</span>` : '-';
         if (ds === todayStr) noteCell = `<span style="background:var(--accent);color:white;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">오늘</span>`;
       }
 
@@ -1113,8 +1458,8 @@ function renderDuties() {
       li.innerHTML = `
         <div class="num">${i+1}</div>
         <div class="text">
-          ${item.highlight ? `<strong class="highlight">${item.text}</strong>` : item.text}
-          ${item.note ? `<div style="font-size:12px;color:var(--text2);margin-top:4px">※ ${item.note}</div>` : ''}
+          ${item.highlight ? `<strong class="highlight">${escapeHtml(item.text)}</strong>` : escapeHtml(item.text)}
+          ${item.note ? `<div style="font-size:12px;color:var(--text2);margin-top:4px">※ ${escapeHtml(item.note)}</div>` : ''}
         </div>
       `;
       ul.appendChild(li);
@@ -1135,7 +1480,232 @@ function toggleGuide(header) {
 // ══════════════════════════════════════════
 //  SETTINGS
 // ══════════════════════════════════════════
+function cloneDutyItems(items) {
+  return items.map(item => ({
+    text: item.text || '',
+    note: item.note || '',
+    highlight: Boolean(item.highlight),
+  }));
+}
+
+function normalizeStartPoint() {
+  if (!state.employees.length) return;
+  if (!state.startPoint?.date) state.startPoint = { ...DEFAULT_START };
+  const maxIdx = state.employees.length - 1;
+  state.startPoint.empIndex = Math.min(Math.max(parseInt(state.startPoint.empIndex) || 0, 0), maxIdx);
+}
+
+function humiMonthLabel(months = HUMI_MONTHS) {
+  const sorted = [...months].sort((a,b) => a - b);
+  return sorted.length ? `${sorted.map(m => `${m}월`).join(', ')} (${sorted.length}개월)` : '적용 안 함';
+}
+
+function renderSettingsSummary() {
+  normalizeStartPoint();
+  const startName = state.employees[state.startPoint.empIndex] || '-';
+  document.getElementById('summaryEmployees').textContent = `${state.employees.length}명`;
+  document.getElementById('summaryHolidays').textContent = `${state.holidays.length}개`;
+  document.getElementById('summaryPersonnelChanges').textContent = `${(state.personnelChanges || []).length}건`;
+  document.getElementById('summaryHumiMonths').textContent = HUMI_MONTHS.length ? `${HUMI_MONTHS.length}개월` : '없음';
+  document.getElementById('summaryStartPoint').textContent = `${state.startPoint.date} ${startName}`;
+}
+
+function readIntegrationConfig() {
+  integrationConfig = {
+    supabaseUrl: document.getElementById('supabaseUrl').value.trim(),
+    supabaseAnonKey: document.getElementById('supabaseAnonKey').value.trim(),
+    supabaseTable: document.getElementById('supabaseTable').value.trim() || 'danbun_settings',
+    supabaseRecordId: document.getElementById('supabaseRecordId').value.trim() || 'guro_dangbun',
+    githubOwner: document.getElementById('githubOwner').value.trim() || 'kittycong',
+    githubRepo: document.getElementById('githubRepo').value.trim() || 'guro_dangbun',
+    githubBranch: document.getElementById('githubBranch').value.trim() || 'main2',
+    githubDataPath: document.getElementById('githubDataPath').value.trim() || 'danbun_data.json',
+    githubPagesUrl: document.getElementById('githubPagesUrl').value.trim() || 'https://kittycong.github.io/guro_dangbun/',
+  };
+  return integrationConfig;
+}
+
+function renderIntegrationConfig() {
+  document.getElementById('supabaseUrl').value = integrationConfig.supabaseUrl || '';
+  document.getElementById('supabaseAnonKey').value = integrationConfig.supabaseAnonKey || '';
+  document.getElementById('supabaseTable').value = integrationConfig.supabaseTable || 'danbun_settings';
+  document.getElementById('supabaseRecordId').value = integrationConfig.supabaseRecordId || 'guro_dangbun';
+  document.getElementById('githubOwner').value = integrationConfig.githubOwner || 'kittycong';
+  document.getElementById('githubRepo').value = integrationConfig.githubRepo || 'guro_dangbun';
+  document.getElementById('githubBranch').value = integrationConfig.githubBranch || 'main2';
+  document.getElementById('githubDataPath').value = integrationConfig.githubDataPath || 'danbun_data.json';
+  document.getElementById('githubPagesUrl').value = integrationConfig.githubPagesUrl || 'https://kittycong.github.io/guro_dangbun/';
+}
+
+function saveIntegrationConfig() {
+  readIntegrationConfig();
+  saveData();
+  showToast('연동값 저장 완료');
+}
+
+function getSupabaseClient() {
+  readIntegrationConfig();
+  if (!integrationConfig.supabaseUrl || !integrationConfig.supabaseAnonKey) {
+    throw new Error('Supabase URL과 anon key를 입력하세요');
+  }
+  if (!window.supabase?.createClient) {
+    throw new Error('Supabase 라이브러리를 불러오지 못했습니다');
+  }
+  return window.supabase.createClient(integrationConfig.supabaseUrl, integrationConfig.supabaseAnonKey);
+}
+
+async function testSupabaseConnection() {
+  try {
+    const client = getSupabaseClient();
+    const { error } = await client
+      .from(integrationConfig.supabaseTable)
+      .select('id')
+      .eq('id', integrationConfig.supabaseRecordId)
+      .limit(1);
+    if (error) throw error;
+    saveData();
+    showToast('Supabase 연결 확인 완료');
+  } catch (e) {
+    showToast(e.message || 'Supabase 연결 실패');
+  }
+}
+
+async function saveSharedSettings() {
+  try {
+    const client = getSupabaseClient();
+    const { error } = await client
+      .from(integrationConfig.supabaseTable)
+      .upsert({
+        id: integrationConfig.supabaseRecordId,
+        data: buildSettingsPayload(),
+        updated_at: new Date().toISOString(),
+      });
+    if (error) throw error;
+    saveData();
+    showToast('Supabase 공유 저장 완료');
+  } catch (e) {
+    showToast(e.message || 'Supabase 저장 실패');
+  }
+}
+
+async function loadSharedSettings() {
+  try {
+    const client = getSupabaseClient();
+    const { data, error } = await client
+      .from(integrationConfig.supabaseTable)
+      .select('data, updated_at')
+      .eq('id', integrationConfig.supabaseRecordId)
+      .single();
+    if (error) throw error;
+    if (!data?.data) throw new Error('공유 설정 데이터가 없습니다');
+    applySettingsPayload(data.data);
+    saveData(); rebuildSchedule(); renderAll();
+    showToast('Supabase 공유 설정 불러오기 완료');
+  } catch (e) {
+    showToast(e.message || 'Supabase 불러오기 실패');
+  }
+}
+
+function renderHumiSettings() {
+  const humiText = HUMI_MONTHS.length ? `가습기 당번 (${HUMI_MONTHS.map(m => `${m}월`).join(', ')})` : '가습기 당번 미적용';
+  document.getElementById('humiLegendText').textContent = humiText;
+  document.getElementById('humiDutyTitle').textContent = `💧 ${humiText} 업무`;
+  const wrap = document.getElementById('humiMonthChecks');
+  wrap.innerHTML = '';
+  document.getElementById('humiMonthSummary').textContent = humiMonthLabel();
+  for (let m = 1; m <= 12; m++) {
+    const label = document.createElement('label');
+    label.className = 'check-pill';
+    label.innerHTML = `<input type="checkbox" value="${m}" ${HUMI_MONTHS.includes(m) ? 'checked' : ''} onchange="toggleHumiMonth(${m}, this.checked)"> ${m}월`;
+    wrap.appendChild(label);
+  }
+}
+
+function toggleHumiMonth(month, checked) {
+  if (checked && !HUMI_MONTHS.includes(month)) HUMI_MONTHS.push(month);
+  if (!checked) HUMI_MONTHS = HUMI_MONTHS.filter(m => m !== month);
+  HUMI_MONTHS.sort((a,b) => a - b);
+  saveData(); rebuildSchedule(); renderAll();
+  showToast('가습기 적용 월 저장 완료');
+}
+
+function getDutyCollection(type) {
+  if (type === 'common') return DUTY_COMMON_DATA;
+  if (type === 'humi') return DUTY_HUMI_DATA;
+  return DUTY_NOTES_DATA;
+}
+
+function renderDutyEditor(type, containerId) {
+  const list = document.getElementById(containerId);
+  const items = getDutyCollection(type);
+  list.innerHTML = '';
+  items.forEach((item, idx) => {
+    const li = document.createElement('li');
+    li.className = 'setting-item';
+    li.innerHTML = `
+      <div class="order">${idx + 1}</div>
+      <div class="setting-fields">
+        <input class="input-field" value="${escapeHtml(item.text)}" placeholder="업무 내용" onchange="updateDutyItem('${type}', ${idx}, 'text', this.value)">
+        <textarea class="input-field setting-note" placeholder="비고 또는 설명" onchange="updateDutyItem('${type}', ${idx}, 'note', this.value)">${escapeHtml(item.note || '')}</textarea>
+        <label style="font-size:12px;color:var(--text2);display:flex;gap:6px;align-items:center">
+          <input type="checkbox" ${item.highlight ? 'checked' : ''} onchange="updateDutyItem('${type}', ${idx}, 'highlight', this.checked)"> 강조 표시
+        </label>
+      </div>
+      <div class="setting-actions">
+        <button class="btn btn-sm btn-ghost" onclick="moveDutyItem('${type}', ${idx}, -1)" title="위로">↑</button>
+        <button class="btn btn-sm btn-ghost" onclick="moveDutyItem('${type}', ${idx}, 1)" title="아래로">↓</button>
+        <button class="btn btn-sm btn-danger" onclick="removeDutyItem('${type}', ${idx})">삭제</button>
+      </div>
+    `;
+    list.appendChild(li);
+  });
+}
+
+function renderDutySettings() {
+  renderDutyEditor('common', 'settingsDutyCommon');
+  renderDutyEditor('humi', 'settingsDutyHumi');
+  renderDutyEditor('notes', 'settingsDutyNotes');
+}
+
+function updateDutyItem(type, idx, field, value) {
+  const items = getDutyCollection(type);
+  if (!items[idx]) return;
+  items[idx][field] = field === 'highlight' ? Boolean(value) : String(value).trim();
+  saveData(); renderAll();
+  showToast('업무 문구 저장 완료');
+}
+
+function addDutyItem(type) {
+  getDutyCollection(type).push({ text: '새 업무를 입력하세요', note: '', highlight: false });
+  saveData(); renderAll();
+  showToast('업무 항목 추가 완료');
+}
+
+function removeDutyItem(type, idx) {
+  getDutyCollection(type).splice(idx, 1);
+  saveData(); renderAll();
+  showToast('업무 항목 삭제 완료');
+}
+
+function moveDutyItem(type, idx, dir) {
+  const items = getDutyCollection(type);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  [items[idx], items[newIdx]] = [items[newIdx], items[idx]];
+  saveData(); renderAll();
+}
+
+function resetDutyItems() {
+  if (!confirm('당번 업무 문구를 초기값으로 되돌릴까요?')) return;
+  DUTY_COMMON_DATA = cloneDutyItems(DEFAULT_DUTY_COMMON_DATA);
+  DUTY_HUMI_DATA = cloneDutyItems(DEFAULT_DUTY_HUMI_DATA);
+  DUTY_NOTES_DATA = cloneDutyItems(DEFAULT_DUTY_NOTES_DATA);
+  saveData(); renderAll();
+  showToast('업무 문구 초기화 완료');
+}
+
 function renderEmployees() {
+  normalizeStartPoint();
   const ul = document.getElementById('empList');
   ul.innerHTML = '';
   state.employees.forEach((name, idx) => {
@@ -1145,18 +1715,26 @@ function renderEmployees() {
     li.dataset.idx = idx;
     li.innerHTML = `
       <div class="emp-num">${idx+1}</div>
-      <div class="emp-name">${name}</div>
+      <div class="emp-name">${escapeHtml(name)}</div>
       <div class="emp-actions">
         <button class="btn btn-sm btn-ghost" onclick="moveEmployee(${idx},-1)" title="위로">↑</button>
         <button class="btn btn-sm btn-ghost" onclick="moveEmployee(${idx},1)" title="아래로">↓</button>
         <button class="btn btn-sm btn-danger" onclick="removeEmployee(${idx})">삭제</button>
       </div>
     `;
+    li.addEventListener('dragstart', ev => ev.dataTransfer.setData('text/plain', String(idx)));
+    li.addEventListener('dragover', ev => ev.preventDefault());
+    li.addEventListener('drop', ev => {
+      ev.preventDefault();
+      const from = parseInt(ev.dataTransfer.getData('text/plain'));
+      reorderEmployee(from, idx);
+    });
     ul.appendChild(li);
   });
+  document.getElementById('startDate').value = state.startPoint.date;
   // update startEmployee select
   const sel = document.getElementById('startEmployee');
-  const cur = sel.value;
+  const cur = String(state.startPoint.empIndex);
   sel.innerHTML = '';
   state.employees.forEach((name, idx) => {
     const o = document.createElement('option');
@@ -1164,7 +1742,7 @@ function renderEmployees() {
     if (String(idx) === String(cur)) o.selected = true;
     sel.appendChild(o);
   });
-  if (!cur && state.startPoint) sel.value = state.startPoint.empIndex;
+  sel.value = String(state.startPoint.empIndex);
 }
 
 function addEmployee() {
@@ -1182,20 +1760,83 @@ function removeEmployee(idx) {
   const name = state.employees[idx];
   if (!confirm(`${name}을(를) 삭제할까요?`)) return;
   state.employees.splice(idx, 1);
+  normalizeStartPoint();
   saveData(); rebuildSchedule(); renderAll();
   showToast(`${name} 삭제 완료`);
 }
 function moveEmployee(idx, dir) {
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= state.employees.length) return;
+  const startName = state.employees[state.startPoint.empIndex];
   [state.employees[idx], state.employees[newIdx]] = [state.employees[newIdx], state.employees[idx]];
+  state.startPoint.empIndex = state.employees.indexOf(startName);
   saveData(); rebuildSchedule(); renderAll();
+}
+function reorderEmployee(fromIdx, toIdx) {
+  if (Number.isNaN(fromIdx) || fromIdx === toIdx) return;
+  const startName = state.employees[state.startPoint.empIndex];
+  const [moved] = state.employees.splice(fromIdx, 1);
+  state.employees.splice(toIdx, 0, moved);
+  state.startPoint.empIndex = state.employees.indexOf(startName);
+  saveData(); rebuildSchedule(); renderAll();
+  showToast('직원 순서 변경 완료');
 }
 function resetEmployees() {
   if (!confirm('직원 목록을 초기값으로 되돌릴까요?')) return;
   state.employees = [...DEFAULT_EMPLOYEES];
+  normalizeStartPoint();
   saveData(); rebuildSchedule(); renderAll();
   showToast('직원 목록 초기화 완료');
+}
+
+function renderPersonnelChanges() {
+  const ul = document.getElementById('personnelChangeList');
+  ul.innerHTML = '';
+  const sorted = [...(state.personnelChanges || [])].sort((a,b) => a.date.localeCompare(b.date));
+
+  if (!sorted.length) {
+    ul.innerHTML = '<li style="font-size:12px;color:var(--text2);padding:10px 0">등록된 입사·퇴사 반영일이 없습니다.</li>';
+    return;
+  }
+
+  sorted.forEach((ch, idx) => {
+    const originalIdx = state.personnelChanges.indexOf(ch);
+    const typeLabel = ch.type === 'leave' ? '퇴사' : '입사';
+    const li = document.createElement('li');
+    li.className = 'change-item';
+    li.innerHTML = `
+      <span class="change-date">${escapeHtml(ch.date)}</span>
+      <span class="change-type ${ch.type === 'leave' ? 'leave' : 'join'}">${typeLabel}</span>
+      <span class="change-name">${escapeHtml(ch.name)}</span>
+      <button class="btn btn-sm btn-danger" onclick="removePersonnelChange(${originalIdx})">삭제</button>
+    `;
+    ul.appendChild(li);
+  });
+}
+
+function addPersonnelChange() {
+  const date = document.getElementById('newChangeDate').value;
+  const type = document.getElementById('newChangeType').value;
+  const name = document.getElementById('newChangeName').value.trim();
+
+  if (!date || !name) return showToast('반영일과 직원 이름을 입력하세요');
+  if (!['join', 'leave'].includes(type)) return showToast('입사 또는 퇴사를 선택하세요');
+  if (type === 'join' && state.employees.includes(name)) return showToast('기본 직원 목록에 이미 있는 이름입니다');
+  if (state.personnelChanges.some(ch => ch.date === date && ch.type === type && ch.name === name)) {
+    return showToast('이미 등록된 인사 변경입니다');
+  }
+
+  state.personnelChanges.push({ date, type, name });
+  document.getElementById('newChangeDate').value = '';
+  document.getElementById('newChangeName').value = '';
+  saveData(); rebuildSchedule(); renderAll();
+  showToast('입사·퇴사 반영일 추가 완료');
+}
+
+function removePersonnelChange(idx) {
+  state.personnelChanges.splice(idx, 1);
+  saveData(); rebuildSchedule(); renderAll();
+  showToast('입사·퇴사 반영일 삭제 완료');
 }
 
 function renderHolidays() {
@@ -1207,7 +1848,7 @@ function renderHolidays() {
     li.className = 'holiday-item';
     li.innerHTML = `
       <span class="holiday-date">${h.date}</span>
-      <span class="holiday-name">${h.name}</span>
+      <span class="holiday-name">${escapeHtml(h.name)}</span>
       <button class="btn btn-sm btn-danger" onclick="removeHoliday('${h.date}')">삭제</button>
     `;
     ul.appendChild(li);
@@ -1240,13 +1881,15 @@ function saveStartPoint() {
   const date = document.getElementById('startDate').value;
   const empIndex = parseInt(document.getElementById('startEmployee').value);
   if (!date) return showToast('시작 날짜를 선택하세요');
+  if (Number.isNaN(empIndex)) return showToast('시작 직원을 선택하세요');
   state.startPoint = { date, empIndex };
   saveData(); rebuildSchedule(); renderAll();
   showToast('시작점 저장 완료');
 }
 
 function exportData() {
-  const data = JSON.stringify({ employees: state.employees, holidays: state.holidays, startPoint: state.startPoint }, null, 2);
+  readIntegrationConfig();
+  const data = JSON.stringify(buildSettingsPayload(), null, 2);
   const blob = new Blob([data], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1261,15 +1904,33 @@ function handleImport(e) {
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      if (data.employees) state.employees = data.employees;
-      if (data.holidays) state.holidays = data.holidays;
-      if (data.startPoint) state.startPoint = data.startPoint;
+      applySettingsPayload(data);
       saveData(); rebuildSchedule(); renderAll();
       showToast('데이터 복원 완료');
     } catch { showToast('파일 형식 오류'); }
   };
   reader.readAsText(file);
   e.target.value = '';
+}
+
+function clearSavedData() {
+  if (!confirm('브라우저에 저장된 설정값을 삭제하고 기본값으로 되돌릴까요?')) return;
+  localStorage.removeItem('danbun_v2');
+  state.employees = [...DEFAULT_EMPLOYEES];
+  state.holidays = [...DEFAULT_HOLIDAYS];
+  state.personnelChanges = [];
+  state.startPoint = { ...DEFAULT_START };
+  HUMI_MONTHS = [...DEFAULT_HUMI_MONTHS];
+  DUTY_COMMON_DATA = cloneDutyItems(DEFAULT_DUTY_COMMON_DATA);
+  DUTY_HUMI_DATA = cloneDutyItems(DEFAULT_DUTY_HUMI_DATA);
+  DUTY_NOTES_DATA = cloneDutyItems(DEFAULT_DUTY_NOTES_DATA);
+  integrationConfig = {
+    ...integrationConfig,
+    supabaseUrl: '',
+    supabaseAnonKey: '',
+  };
+  rebuildSchedule(); renderAll();
+  showToast('저장값 삭제 완료');
 }
 
 // ══════════════════════════════════════════
@@ -1281,7 +1942,7 @@ function switchTab(name) {
   event.currentTarget.classList.add('active');
   document.getElementById('page-'+name).classList.add('active');
   if (name === 'sequence') renderSequence();
-  if (name === 'settings') { renderEmployees(); renderHolidays(); }
+  if (name === 'settings') { renderEmployees(); renderHolidays(); renderPersonnelChanges(); renderIntegrationConfig(); renderHumiSettings(); renderDutySettings(); renderSettingsSummary(); }
 }
 
 // ══════════════════════════════════════════
@@ -1299,6 +1960,11 @@ function renderAll() {
   renderDuties();
   renderEmployees();
   renderHolidays();
+  renderPersonnelChanges();
+  renderIntegrationConfig();
+  renderHumiSettings();
+  renderDutySettings();
+  renderSettingsSummary();
 }
 
 // ══════════════════════════════════════════
@@ -1319,10 +1985,14 @@ function renderAll() {
     DEFAULT_EMPLOYEES = json.employees || [];
     DEFAULT_HOLIDAYS  = json.holidays  || [];
     DEFAULT_START     = json.startPoint || DEFAULT_START;
-    HUMI_MONTHS       = json.humiMonths || HUMI_MONTHS;
-    DUTY_COMMON_DATA  = json.dutyCommon || [];
-    DUTY_HUMI_DATA    = json.dutyHumi   || [];
-    DUTY_NOTES_DATA   = json.dutyNotes  || [];
+    DEFAULT_HUMI_MONTHS = json.humiMonths || DEFAULT_HUMI_MONTHS;
+    DEFAULT_DUTY_COMMON_DATA = cloneDutyItems(json.dutyCommon || []);
+    DEFAULT_DUTY_HUMI_DATA = cloneDutyItems(json.dutyHumi || []);
+    DEFAULT_DUTY_NOTES_DATA = cloneDutyItems(json.dutyNotes || []);
+    HUMI_MONTHS       = [...DEFAULT_HUMI_MONTHS];
+    DUTY_COMMON_DATA  = cloneDutyItems(DEFAULT_DUTY_COMMON_DATA);
+    DUTY_HUMI_DATA    = cloneDutyItems(DEFAULT_DUTY_HUMI_DATA);
+    DUTY_NOTES_DATA   = cloneDutyItems(DEFAULT_DUTY_NOTES_DATA);
   } catch(e) {
     console.warn('danbun_data.json 로드 실패, localStorage만 사용합니다:', e);
   }
@@ -1331,7 +2001,14 @@ function renderAll() {
   const saved = loadData();
   state.employees  = saved?.employees  || [...DEFAULT_EMPLOYEES];
   state.holidays   = saved?.holidays   || [...DEFAULT_HOLIDAYS];
+  state.personnelChanges = saved?.personnelChanges || [];
   state.startPoint = saved?.startPoint || { ...DEFAULT_START };
+  HUMI_MONTHS       = saved?.humiMonths || HUMI_MONTHS;
+  DUTY_COMMON_DATA  = saved?.dutyCommon ? cloneDutyItems(saved.dutyCommon) : DUTY_COMMON_DATA;
+  DUTY_HUMI_DATA    = saved?.dutyHumi ? cloneDutyItems(saved.dutyHumi) : DUTY_HUMI_DATA;
+  DUTY_NOTES_DATA   = saved?.dutyNotes ? cloneDutyItems(saved.dutyNotes) : DUTY_NOTES_DATA;
+  integrationConfig = saved?.integrationConfig ? { ...integrationConfig, ...saved.integrationConfig } : integrationConfig;
+  normalizeStartPoint();
 
   rebuildSchedule();
   renderAll();
