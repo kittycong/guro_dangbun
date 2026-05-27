@@ -200,6 +200,21 @@ body {
 .cal-cell.weekend { background: #FAFAFA; }
 .cal-cell.holiday-cell { background: var(--red-light); }
 .cal-cell.today-cell { background: var(--accent-light) !important; border-color: var(--accent); border-width: 2px; }
+.cal-cell.editable { cursor: pointer; }
+.cal-cell.editable:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cal-cell.manual-cell::after {
+  content: "수정";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--gold);
+  background: var(--gold-light);
+  border: 1px solid #ead48f;
+  border-radius: 8px;
+  padding: 1px 5px;
+}
 
 .cal-date {
   font-size: 13px;
@@ -250,6 +265,46 @@ body {
   background: var(--humi-light);
   color: var(--humi);
   border: 1px solid #d4c4f5;
+}
+.duty-chip.manual {
+  border-style: dashed;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 20px;
+}
+.modal-backdrop.open { display: flex; }
+.modal-card {
+  width: min(460px, 100%);
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.modal-header {
+  padding: 14px 18px;
+  background: var(--accent);
+  color: white;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-body { padding: 18px; }
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
 }
 
 /* ── Today Banner ── */
@@ -1004,6 +1059,31 @@ body {
 
 <div class="toast" id="toast"></div>
 
+<div class="modal-backdrop" id="manualDutyModal" onclick="handleManualDutyBackdrop(event)">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span id="manualDutyTitle">당번 직접 변경</span>
+      <button class="btn btn-sm btn-ghost" style="color:white;border-color:rgba(255,255,255,0.45)" onclick="closeManualDutyModal()">닫기</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="manualDutyDate">
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">휴게실 당번</label>
+        <select class="input-field" id="manualHyuEmployee"></select>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">가습기 당번</label>
+        <select class="input-field" id="manualGaEmployee"></select>
+      </div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6">저장하면 선택한 날짜에만 직접 변경값이 적용됩니다. 자동 순번 계산은 다른 날짜에 계속 적용됩니다.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="clearManualDuty()">직접 변경 해제</button>
+      <button class="btn btn-primary" onclick="saveManualDuty()">저장</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════
 //  STATE
@@ -1045,6 +1125,7 @@ function saveData() {
     employees: state.employees,
     holidays: state.holidays,
     personnelChanges: state.personnelChanges,
+    manualDuties: state.manualDuties,
     startPoint: state.startPoint,
     humiMonths: HUMI_MONTHS,
     dutyCommon: DUTY_COMMON_DATA,
@@ -1059,6 +1140,7 @@ const state = {
   employees: [],
   holidays: [],
   personnelChanges: [],
+  manualDuties: {},
   startPoint: { ...DEFAULT_START },
   viewYear: new Date().getFullYear(),
   viewMonth: new Date().getMonth() + 1,
@@ -1095,6 +1177,7 @@ function buildSettingsPayload() {
     employees: state.employees,
     holidays: state.holidays,
     personnelChanges: state.personnelChanges,
+    manualDuties: state.manualDuties,
     startPoint: state.startPoint,
     humiMonths: HUMI_MONTHS,
     dutyCommon: DUTY_COMMON_DATA,
@@ -1108,6 +1191,7 @@ function applySettingsPayload(data) {
   if (data.employees && !Array.isArray(data.employees)) throw new Error('employees');
   if (data.holidays && !Array.isArray(data.holidays)) throw new Error('holidays');
   if (data.personnelChanges && !Array.isArray(data.personnelChanges)) throw new Error('personnelChanges');
+  if (data.manualDuties && typeof data.manualDuties !== 'object') throw new Error('manualDuties');
   if (data.humiMonths && !Array.isArray(data.humiMonths)) throw new Error('humiMonths');
 
   if (data.employees) {
@@ -1123,6 +1207,7 @@ function applySettingsPayload(data) {
       .filter(ch => ch.name);
   }
   if (data.startPoint) state.startPoint = data.startPoint;
+  if (data.manualDuties) state.manualDuties = data.manualDuties;
   if (data.humiMonths) HUMI_MONTHS = data.humiMonths.map(Number).filter(m => m >= 1 && m <= 12);
   if (data.dutyCommon) DUTY_COMMON_DATA = cloneDutyItems(data.dutyCommon);
   if (data.dutyHumi) DUTY_HUMI_DATA = cloneDutyItems(data.dutyHumi);
@@ -1212,9 +1297,13 @@ function getDuty(dateStr) {
   const entry = scheduleMap[dateStr];
   if (!entry) return null;
   const month = parseInt(dateStr.split('-')[1]);
+  const manual = state.manualDuties?.[dateStr];
+  const hyu = manual?.hyu || entry.hyu;
+  const ga = manual?.ga || entry.ga;
   return {
-    hyu: entry.hyu,
-    ga: isHumiMonth(month) ? entry.ga : null,
+    hyu,
+    ga: isHumiMonth(month) ? ga : null,
+    manual: Boolean(manual),
   };
 }
 
@@ -1274,7 +1363,13 @@ function renderCalendar() {
     if (isSat) cls += ' sat-col';
     if (isHol) cls += ' holiday-cell';
     if (isToday) cls += ' today-cell';
+    if (!isHol && !isSun && !isSat) cls += ' editable';
+    if (duty?.manual) cls += ' manual-cell';
     cell.className = cls;
+    if (!isHol && !isSun && !isSat) {
+      cell.title = '클릭해서 당번 직접 변경';
+      cell.onclick = () => openManualDutyModal(ds);
+    }
 
     // date number
     const dateEl = document.createElement('div');
@@ -1291,13 +1386,13 @@ function renderCalendar() {
 
     if (duty) {
       const hyuChip = document.createElement('div');
-      hyuChip.className = 'duty-chip hyu';
+      hyuChip.className = 'duty-chip hyu' + (duty.manual ? ' manual' : '');
       hyuChip.textContent = `🏠 ${duty.hyu}`;
       cell.appendChild(hyuChip);
 
       if (duty.ga) {
         const gaChip = document.createElement('div');
-        gaChip.className = 'duty-chip ga';
+        gaChip.className = 'duty-chip ga' + (duty.manual ? ' manual' : '');
         gaChip.textContent = `💧 ${duty.ga}`;
         cell.appendChild(gaChip);
       }
@@ -1344,6 +1439,56 @@ function goToday() {
   state.viewYear = t.getFullYear();
   state.viewMonth = t.getMonth() + 1;
   renderCalendar();
+}
+
+function fillEmployeeSelect(selectEl, employees, selectedName, includeEmpty = false) {
+  selectEl.innerHTML = includeEmpty ? '<option value="">없음</option>' : '';
+  employees.forEach(name => {
+    const o = document.createElement('option');
+    o.value = name;
+    o.textContent = name;
+    if (name === selectedName) o.selected = true;
+    selectEl.appendChild(o);
+  });
+}
+
+function openManualDutyModal(ds) {
+  const duty = getDuty(ds);
+  const employees = activeEmployeesOn(ds);
+  if (!duty || !employees.length) return;
+
+  document.getElementById('manualDutyDate').value = ds;
+  document.getElementById('manualDutyTitle').textContent = `${ds} 당번 직접 변경`;
+  fillEmployeeSelect(document.getElementById('manualHyuEmployee'), employees, duty.hyu);
+  fillEmployeeSelect(document.getElementById('manualGaEmployee'), employees, duty.ga, true);
+  document.getElementById('manualDutyModal').classList.add('open');
+}
+
+function closeManualDutyModal() {
+  document.getElementById('manualDutyModal').classList.remove('open');
+}
+
+function handleManualDutyBackdrop(event) {
+  if (event.target.id === 'manualDutyModal') closeManualDutyModal();
+}
+
+function saveManualDuty() {
+  const ds = document.getElementById('manualDutyDate').value;
+  const hyu = document.getElementById('manualHyuEmployee').value;
+  const ga = document.getElementById('manualGaEmployee').value;
+  if (!ds || !hyu) return showToast('휴게실 당번을 선택하세요');
+
+  state.manualDuties[ds] = { hyu, ga };
+  saveData(); renderAll(); closeManualDutyModal();
+  showToast('날짜별 당번 변경 저장 완료');
+}
+
+function clearManualDuty() {
+  const ds = document.getElementById('manualDutyDate').value;
+  if (!ds) return;
+  delete state.manualDuties[ds];
+  saveData(); renderAll(); closeManualDutyModal();
+  showToast('날짜별 직접 변경 해제 완료');
 }
 
 // ══════════════════════════════════════════
@@ -1399,7 +1544,8 @@ function renderSequence() {
       } else if (duty) {
         hyuCell = `<span class="hyu-badge">🏠 ${escapeHtml(duty.hyu)}</span>`;
         gaCell = duty.ga ? `<span class="ga-badge">💧 ${escapeHtml(duty.ga)}</span>` : '-';
-        if (ds === todayStr) noteCell = `<span style="background:var(--accent);color:white;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">오늘</span>`;
+        if (duty.manual) noteCell = `<span style="background:var(--gold-light);color:var(--gold);padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">직접 변경</span>`;
+        if (ds === todayStr) noteCell += `<span style="background:var(--accent);color:white;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;margin-left:4px">오늘</span>`;
       }
 
       tr.innerHTML = `
@@ -1919,6 +2065,7 @@ function clearSavedData() {
   state.employees = [...DEFAULT_EMPLOYEES];
   state.holidays = [...DEFAULT_HOLIDAYS];
   state.personnelChanges = [];
+  state.manualDuties = {};
   state.startPoint = { ...DEFAULT_START };
   HUMI_MONTHS = [...DEFAULT_HUMI_MONTHS];
   DUTY_COMMON_DATA = cloneDutyItems(DEFAULT_DUTY_COMMON_DATA);
@@ -2002,6 +2149,7 @@ function renderAll() {
   state.employees  = saved?.employees  || [...DEFAULT_EMPLOYEES];
   state.holidays   = saved?.holidays   || [...DEFAULT_HOLIDAYS];
   state.personnelChanges = saved?.personnelChanges || [];
+  state.manualDuties = saved?.manualDuties || {};
   state.startPoint = saved?.startPoint || { ...DEFAULT_START };
   HUMI_MONTHS       = saved?.humiMonths || HUMI_MONTHS;
   DUTY_COMMON_DATA  = saved?.dutyCommon ? cloneDutyItems(saved.dutyCommon) : DUTY_COMMON_DATA;
