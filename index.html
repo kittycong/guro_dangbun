@@ -171,7 +171,7 @@ body {
 }
 .cal-header {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   background: var(--accent);
   color: white;
 }
@@ -187,7 +187,7 @@ body {
 
 .cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   border-left: 1px solid var(--border);
   border-top: 1px solid var(--border);
 }
@@ -272,6 +272,16 @@ body {
 }
 .duty-chip.manual {
   border-style: dashed;
+}
+.clean-chip {
+  display: inline-flex;
+  width: 100%;
+  margin-top: 3px;
+  padding: 4px 9px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 800;
+  border: 1px solid var(--border);
 }
 .duty-edit-btn {
   margin-top: 4px;
@@ -833,6 +843,7 @@ body {
   <div class="legend">
     <div class="legend-item"><div class="legend-dot" style="background:var(--accent-light);border:1px solid #c5e0cb"></div> 휴게실 당번</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--humi-light);border:1px solid #d4c4f5"></div> <span id="humiLegendText">가습기 당번 (9~1월)</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FFF7C7;border:1px solid #F1DD72"></div> 금요일 5층 청소</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--red-light);border:1px solid #f5c6c2"></div> 공휴일</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div> 오늘</div>
   </div>
@@ -845,7 +856,6 @@ body {
       <div class="cal-header-cell">수</div>
       <div class="cal-header-cell">목</div>
       <div class="cal-header-cell">금</div>
-      <div class="cal-header-cell sat">토</div>
     </div>
     <div class="cal-grid" id="calGrid"></div>
   </div>
@@ -889,6 +899,7 @@ body {
           <th>요일</th>
           <th>휴게실 당번</th>
           <th>가습기 당번</th>
+          <th>5층 청소</th>
           <th>비고</th>
         </tr>
       </thead>
@@ -1328,11 +1339,27 @@ function getTeamClass(name) {
   return '';
 }
 
+function getTeamColorClass(team) {
+  if (team === '사업팀') return 'team-business';
+  if (team === '행정팀') return 'team-admin';
+  if (team === '활동지원팀') return 'team-support';
+  return '';
+}
+
 function teamOptions(selectedTeam = '') {
   return ['', '사업팀', '행정팀', '활동지원팀'].map(team => {
     const label = team || '팀 없음';
     return `<option value="${team}" ${team === selectedTeam ? 'selected' : ''}>${label}</option>`;
   }).join('');
+}
+
+function getFridayCleaningTeam(ds) {
+  const date = new Date(ds + 'T00:00:00');
+  if (date.getDay() !== 5) return null;
+  const base = new Date('2026-05-29T00:00:00');
+  const weeks = Math.floor((date - base) / (7 * 24 * 60 * 60 * 1000));
+  const teams = ['행정팀', '활동지원팀', '사업팀'];
+  return teams[((weeks % teams.length) + teams.length) % teams.length];
 }
 
 // 시작점 기준으로 특정 날짜의 당번 이름 계산
@@ -1429,13 +1456,14 @@ function renderCalendar() {
   const todayStr = dateStr(today.getFullYear(), today.getMonth()+1, today.getDate());
 
   const firstDay = new Date(y, m-1, 1).getDay(); // 0=Sun
+  const firstGridCol = firstDay === 6 ? 0 : firstDay;
   const daysInMonth = new Date(y, m, 0).getDate();
 
   const grid = document.getElementById('calGrid');
   grid.innerHTML = '';
 
   // empty cells
-  for (let i = 0; i < firstDay; i++) {
+  for (let i = 0; i < firstGridCol; i++) {
     const cell = document.createElement('div');
     cell.className = 'cal-cell empty';
     grid.appendChild(cell);
@@ -1443,11 +1471,13 @@ function renderCalendar() {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const ds = dateStr(y, m, d);
-    const dayOfWeek = (firstDay + d - 1) % 7; // 0=Sun
+    const dayOfWeek = new Date(y, m-1, d).getDay(); // 0=Sun
     const isSun = dayOfWeek === 0, isSat = dayOfWeek === 6;
+    if (isSat) continue;
     const isHol = isHoliday(ds);
     const isToday = ds === todayStr;
     const duty = getDuty(ds);
+    const cleaningTeam = isHol ? null : getFridayCleaningTeam(ds);
 
     const cell = document.createElement('div');
     let cls = 'cal-cell';
@@ -1501,6 +1531,13 @@ function renderCalendar() {
       cell.appendChild(editBtn);
     }
 
+    if (cleaningTeam) {
+      const cleanChip = document.createElement('div');
+      cleanChip.className = ['clean-chip', getTeamColorClass(cleaningTeam)].filter(Boolean).join(' ');
+      cleanChip.textContent = `🧹 5층 ${cleaningTeam}`;
+      cell.appendChild(cleanChip);
+    }
+
     grid.appendChild(cell);
   }
 
@@ -1526,6 +1563,8 @@ function renderTodayBanner(todayStr) {
   } else if (duty) {
     inner += `<div class="duty-row"><span class="label">🏠 휴게실</span><span class="name">${escapeHtml(duty.hyu)}</span></div>`;
     if (duty.ga) inner += `<div class="duty-row"><span class="label">💧 가습기</span><span class="name">${escapeHtml(duty.ga)}</span></div>`;
+    const cleaningTeam = getFridayCleaningTeam(todayStr);
+    if (cleaningTeam) inner += `<div class="duty-row"><span class="label">🧹 5층 청소</span><span class="name">${escapeHtml(cleaningTeam)}</span></div>`;
   }
   inner += `</div>`;
   banner.innerHTML = `<div class="today-banner">${inner}</div>`;
@@ -1637,13 +1676,15 @@ function renderSequence() {
       const tr = document.createElement('tr');
       if (ds === todayStr) tr.style.background = 'var(--accent-light)';
 
-      let hyuCell = '', gaCell = '', noteCell = '';
+      const cleaningTeam = getFridayCleaningTeam(ds);
+      let hyuCell = '', gaCell = '', cleanCell = cleaningTeam ? `<span class="${getTeamColorClass(cleaningTeam)}" style="padding:3px 9px;border-radius:8px;font-size:16px;font-weight:800">🧹 ${cleaningTeam}</span>` : '-';
+      let noteCell = '';
       if (isHol) {
         noteCell = `<span class="holiday-badge">🎌 ${getHolidayName(ds)}</span>`;
-        hyuCell = '-'; gaCell = '-';
+        hyuCell = '-'; gaCell = '-'; cleanCell = '-';
       } else if (isWknd) {
         noteCell = `<span class="weekend-badge">${dow===0?'일':'토'}요일</span>`;
-        hyuCell = '-'; gaCell = '-';
+        hyuCell = '-'; gaCell = '-'; cleanCell = '-';
       } else if (duty) {
         hyuCell = `<span class="hyu-badge ${getTeamClass(duty.hyu)}">🏠 ${escapeHtml(duty.hyu)}</span>`;
         gaCell = duty.ga ? `<span class="ga-badge ${getTeamClass(duty.ga)}">💧 ${escapeHtml(duty.ga)}</span>` : '-';
@@ -1657,6 +1698,7 @@ function renderSequence() {
         <td>${DAY_KO[dow]}요일</td>
         <td>${hyuCell}</td>
         <td>${gaCell}</td>
+        <td>${cleanCell}</td>
         <td>${noteCell}</td>
       `;
       tbody.appendChild(tr);
@@ -1665,7 +1707,7 @@ function renderSequence() {
 }
 
 function exportSequenceCSV() {
-  const rows = [['날짜','요일','휴게실 당번','가습기 당번','비고']];
+  const rows = [['날짜','요일','휴게실 당번','가습기 당번','5층 청소','비고']];
   const y = parseInt(document.getElementById('seqYear').value);
   for (let m = 1; m <= 12; m++) {
     const days = new Date(y, m, 0).getDate();
@@ -1676,11 +1718,13 @@ function exportSequenceCSV() {
       const isHol = isHoliday(ds);
       const isWknd = dow === 0 || dow === 6;
       const duty = getDuty(ds);
+      const cleaningTeam = getFridayCleaningTeam(ds);
       let hyu = '-', ga = '-', note = '';
-      if (isHol) note = getHolidayName(ds);
-      else if (isWknd) note = dow===0?'일요일':'토요일';
+      let clean = cleaningTeam || '-';
+      if (isHol) { note = getHolidayName(ds); clean = '-'; }
+      else if (isWknd) { note = dow===0?'일요일':'토요일'; clean = '-'; }
       else if (duty) { hyu = duty.hyu; ga = duty.ga || '-'; }
-      rows.push([ds, DAY_KO[dow]+'요일', hyu, ga, note]);
+      rows.push([ds, DAY_KO[dow]+'요일', hyu, ga, clean, note]);
     }
   }
   const csv = rows.map(r => r.join(',')).join('\n');
