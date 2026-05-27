@@ -171,8 +171,10 @@ body {
 }
 .calendar-duo {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(680px, 1fr));
   gap: 18px;
+  overflow-x: auto;
+  padding-bottom: 8px;
 }
 .calendar-panel-title {
   background: var(--surface);
@@ -274,6 +276,7 @@ body {
   margin-bottom: 2px;
   width: 100%;
   cursor: grab;
+  white-space: nowrap;
 }
 .duty-chip:active { cursor: grabbing; }
 .duty-chip.hyu {
@@ -792,7 +795,7 @@ body {
 .nav-tabs { top: 78px; padding: 0 20px; }
 .nav-tab { padding: 18px 24px; font-size: 20px; font-weight: 700; gap: 8px; }
 .nav-tab .badge { font-size: 15px; padding: 2px 8px; }
-.page { padding: 28px; max-width: 1320px; }
+.page { padding: 28px; max-width: 1760px; }
 .section-title { font-size: 30px; letter-spacing: 0; }
 .section-sub { font-size: 20px; margin-bottom: 28px; }
 .month-nav button, .btn, .input-field, .filter-row select { font-size: 20px; }
@@ -1087,11 +1090,11 @@ body {
     <!-- 직원 관리 -->
     <div class="card">
       <div class="card-header">
-        👥 직원 순서 관리
+        👥 기본 직원 순서 관리
         <button class="btn btn-sm btn-ghost" onclick="resetEmployees()">초기화</button>
       </div>
       <div class="card-body">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">드래그하여 순서 변경 · 순서가 당번 배정에 반영됩니다</p>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">5월 기준 기본 순서입니다. 입사·퇴사 예정자는 여기서 추가/삭제하지 말고 아래 반영일 관리에 등록하세요.</p>
         <ul class="emp-list" id="empList"></ul>
         <div class="input-row">
           <input class="input-field" id="newEmpName" placeholder="직원 이름 입력" maxlength="10">
@@ -1120,7 +1123,7 @@ body {
     <div class="card wide-card">
       <div class="card-header">🧑‍💼 입사·퇴사 반영일 관리</div>
       <div class="card-body">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">입사자는 반영일부터 당번에 투입되고, 퇴사자는 반영일부터 당번에서 제외됩니다.</p>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">입사자는 반영일부터 당번에 투입되고, 퇴사자는 반영일부터 제외됩니다. 반영일 이전의 기존 순서에는 영향을 주지 않습니다.</p>
         <ul id="personnelChangeList" style="list-style:none;max-height:220px;overflow-y:auto"></ul>
         <div class="input-row" style="flex-wrap:wrap">
           <input class="input-field" type="date" id="newChangeDate" style="max-width:160px">
@@ -1236,11 +1239,18 @@ body {
 // ── 기본값 (JSON 로드 실패 시 폴백) ──
 let DEFAULT_EMPLOYEES = [];
 let DEFAULT_HOLIDAYS = [];
+let DEFAULT_PERSONNEL_CHANGES = [];
 let DEFAULT_START = { date: '2026-04-01', empIndex: 10 };
 let DEFAULT_HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DEFAULT_DUTY_COMMON_DATA = [];
 let DEFAULT_DUTY_HUMI_DATA = [];
 let DEFAULT_DUTY_NOTES_DATA = [];
+const SCHEDULE_VERSION = '2026-05-photo-v1';
+const LEGACY_DEFAULT_EMPLOYEES = [
+  "박수빈", "최수연", "송지은", "김휘원", "김유리",
+  "최유나", "김주진", "김은서", "권은지", "조승민",
+  "노현숙", "인상필", "정채윤", "강지나", "주덕원"
+];
 let HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DUTY_COMMON_DATA = [];
 let DUTY_HUMI_DATA = [];
@@ -1270,6 +1280,7 @@ function loadData() {
 function saveData() {
   localStorage.setItem('danbun_v2', JSON.stringify({
     employees: state.employees,
+    scheduleVersion: SCHEDULE_VERSION,
     employeeTeams: state.employeeTeams,
     holidays: state.holidays,
     personnelChanges: state.personnelChanges,
@@ -1317,6 +1328,10 @@ function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[ch]));
+}
+
+function sameStringArray(a = [], b = []) {
+  return a.length === b.length && a.every((value, idx) => value === b[idx]);
 }
 
 function buildSettingsPayload() {
@@ -2425,7 +2440,7 @@ function clearSavedData() {
   state.employees = [...DEFAULT_EMPLOYEES];
   state.employeeTeams = {};
   state.holidays = [...DEFAULT_HOLIDAYS];
-  state.personnelChanges = [];
+  state.personnelChanges = [...DEFAULT_PERSONNEL_CHANGES];
   state.manualDuties = {};
   state.startPoint = { ...DEFAULT_START };
   HUMI_MONTHS = [...DEFAULT_HUMI_MONTHS];
@@ -2493,6 +2508,7 @@ function renderAll() {
 
     DEFAULT_EMPLOYEES = json.employees || [];
     DEFAULT_HOLIDAYS  = json.holidays  || [];
+    DEFAULT_PERSONNEL_CHANGES = json.personnelChanges || [];
     DEFAULT_START     = json.startPoint || DEFAULT_START;
     DEFAULT_HUMI_MONTHS = json.humiMonths || DEFAULT_HUMI_MONTHS;
     DEFAULT_DUTY_COMMON_DATA = cloneDutyItems(json.dutyCommon || []);
@@ -2508,10 +2524,17 @@ function renderAll() {
 
   // localStorage 우선 적용
   const saved = loadData();
+  if (saved && saved.scheduleVersion !== SCHEDULE_VERSION && sameStringArray(saved.employees || [], LEGACY_DEFAULT_EMPLOYEES)) {
+    saved.employees = [...DEFAULT_EMPLOYEES];
+    saved.startPoint = { ...DEFAULT_START };
+    saved.personnelChanges = [...DEFAULT_PERSONNEL_CHANGES];
+    saved.scheduleVersion = SCHEDULE_VERSION;
+    localStorage.setItem('danbun_v2', JSON.stringify(saved));
+  }
   state.employees  = saved?.employees  || [...DEFAULT_EMPLOYEES];
   state.employeeTeams = saved?.employeeTeams || {};
   state.holidays   = saved?.holidays   || [...DEFAULT_HOLIDAYS];
-  state.personnelChanges = saved?.personnelChanges || [];
+  state.personnelChanges = saved?.personnelChanges || [...DEFAULT_PERSONNEL_CHANGES];
   state.manualDuties = saved?.manualDuties || {};
   state.startPoint = saved?.startPoint || { ...DEFAULT_START };
   HUMI_MONTHS       = saved?.humiMonths || HUMI_MONTHS;
