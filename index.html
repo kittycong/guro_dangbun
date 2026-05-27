@@ -169,6 +169,19 @@ body {
   overflow: hidden;
   margin-bottom: 20px;
 }
+.calendar-duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.calendar-panel-title {
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 24px;
+  font-weight: 900;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
 .cal-header {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -206,6 +219,7 @@ body {
 .cal-cell.today-cell { background: var(--accent-light) !important; border-color: var(--accent); border-width: 2px; }
 .cal-cell.editable { cursor: pointer; }
 .cal-cell.editable:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cal-cell.drop-target { outline: 3px solid var(--gold); outline-offset: -3px; }
 .cal-cell.manual-cell::after {
   content: "수정";
   position: absolute;
@@ -259,7 +273,9 @@ body {
   border-radius: 12px;
   margin-bottom: 2px;
   width: 100%;
+  cursor: grab;
 }
+.duty-chip:active { cursor: grabbing; }
 .duty-chip.hyu {
   background: var(--accent-light);
   color: var(--accent);
@@ -297,9 +313,10 @@ body {
   cursor: pointer;
 }
 .duty-edit-btn:hover { background: var(--accent-light); border-color: var(--accent); }
-.team-business { background: #EFE7FF !important; color: #5B3FA6 !important; border-color: #D8C7FF !important; }
-.team-admin { background: #FFF7C7 !important; color: #756000 !important; border-color: #F1DD72 !important; }
-.team-support { background: #DFF4FF !important; color: #075985 !important; border-color: #9BD7F2 !important; }
+.team-worker { background: #E5E7EB !important; color: #374151 !important; border-color: #C7CBD1 !important; }
+.team-admin { background: #FFE4EF !important; color: #9D174D !important; border-color: #F9A8C7 !important; }
+.team-support { background: #DCFCE7 !important; color: #166534 !important; border-color: #86EFAC !important; }
+.team-welfare { background: #FEF3C7 !important; color: #92400E !important; border-color: #FCD34D !important; }
 .team-select {
   max-width: 132px;
   padding: 6px 8px;
@@ -802,6 +819,7 @@ body {
 .summary-chip .value { font-size: 24px; }
 .seq-table .hyu-badge, .seq-table .ga-badge, .seq-table .holiday-badge, .seq-table .weekend-badge { font-size: 16px; padding: 4px 10px; }
 @media (max-width: 700px) {
+  .calendar-duo { grid-template-columns: 1fr; }
   .nav-tabs { top: 78px; }
   .page { padding: 18px; }
   .cal-cell { min-height: 96px; padding: 7px; }
@@ -822,6 +840,7 @@ body {
 
 <nav class="nav-tabs">
   <div class="nav-tab active" onclick="switchTab('calendar')">📅 당번표</div>
+  <div class="nav-tab" onclick="switchTab('table')">🧾 표형 당번표</div>
   <div class="nav-tab" onclick="switchTab('sequence')">📋 순서 구성표</div>
   <div class="nav-tab" onclick="switchTab('duties')">✅ 당번 업무</div>
   <div class="nav-tab" onclick="switchTab('settings')">⚙️ 설정</div>
@@ -834,7 +853,7 @@ body {
 
   <div class="month-nav">
     <button onclick="changeMonth(-1)">◀</button>
-    <div class="month-label" id="monthLabel"></div>
+    <div class="month-label" id="monthRangeLabel"></div>
     <button onclick="changeMonth(1)">▶</button>
     <div class="month-jump-btns" id="monthJumpBtns"></div>
     <button class="btn btn-ghost btn-sm" onclick="goToday()" style="margin-left:auto">오늘</button>
@@ -848,16 +867,53 @@ body {
     <div class="legend-item"><div class="legend-dot" style="background:var(--accent);"></div> 오늘</div>
   </div>
 
-  <div class="calendar-wrap">
-    <div class="cal-header">
-      <div class="cal-header-cell sun">일</div>
-      <div class="cal-header-cell">월</div>
-      <div class="cal-header-cell">화</div>
-      <div class="cal-header-cell">수</div>
-      <div class="cal-header-cell">목</div>
-      <div class="cal-header-cell">금</div>
+  <div class="calendar-duo">
+    <div class="calendar-wrap">
+      <div class="calendar-panel-title" id="monthLabel"></div>
+      <div class="cal-header">
+        <div class="cal-header-cell sun">일</div>
+        <div class="cal-header-cell">월</div>
+        <div class="cal-header-cell">화</div>
+        <div class="cal-header-cell">수</div>
+        <div class="cal-header-cell">목</div>
+        <div class="cal-header-cell">금</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
     </div>
-    <div class="cal-grid" id="calGrid"></div>
+    <div class="calendar-wrap">
+      <div class="calendar-panel-title" id="nextMonthLabel"></div>
+      <div class="cal-header">
+        <div class="cal-header-cell sun">일</div>
+        <div class="cal-header-cell">월</div>
+        <div class="cal-header-cell">화</div>
+        <div class="cal-header-cell">수</div>
+        <div class="cal-header-cell">목</div>
+        <div class="cal-header-cell">금</div>
+      </div>
+      <div class="cal-grid" id="nextCalGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB: 표형 당번표 ═══ -->
+<div class="page" id="page-table">
+  <div class="section-title">표형 당번표</div>
+  <div class="section-sub">당월과 다음 달의 수령 담당, 가습기, 5층 청소를 표로 확인하세요</div>
+  <div class="seq-table-wrap">
+    <table class="seq-table">
+      <thead>
+        <tr>
+          <th>월</th>
+          <th>날짜</th>
+          <th>요일</th>
+          <th>수령 담당</th>
+          <th>가습기</th>
+          <th>5층 청소</th>
+          <th>비고</th>
+        </tr>
+      </thead>
+      <tbody id="dutyTableBody"></tbody>
+    </table>
   </div>
 </div>
 
@@ -1006,6 +1062,14 @@ body {
             <label for="githubPagesUrl">GitHub Pages URL</label>
             <input class="input-field" id="githubPagesUrl" value="https://kittycong.github.io/guro_dangbun/">
           </div>
+          <div class="config-field">
+            <label for="vercelProject">Vercel project</label>
+            <input class="input-field" id="vercelProject" placeholder="guro-dangbun">
+          </div>
+          <div class="config-field">
+            <label for="vercelUrl">Vercel deploy URL</label>
+            <input class="input-field" id="vercelUrl" placeholder="https://프로젝트.vercel.app">
+          </div>
         </div>
         <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="saveSharedSettings()">Supabase에 공유 저장</button>
@@ -1013,8 +1077,9 @@ body {
           <button class="btn btn-ghost" onclick="testSupabaseConnection()">연결 테스트</button>
         </div>
         <div class="config-help">
+          작업 흐름: GitHub 코드 저장소 → Vercel 자동 배포 → Supabase 공동 저장.
           Supabase 테이블 예시: <code>id text primary key</code>, <code>data jsonb not null</code>, <code>updated_at timestamptz</code>.
-          브라우저에는 공개 가능한 anon key만 입력하세요. GitHub 토큰은 브라우저에 저장하지 않습니다.
+          변경값은 <code>Supabase에 공유 저장</code>을 누르면 공동 저장됩니다. 브라우저에는 공개 가능한 anon key만 입력하세요.
         </div>
       </div>
     </div>
@@ -1190,6 +1255,8 @@ let integrationConfig = {
   githubBranch: 'main2',
   githubDataPath: 'danbun_data.json',
   githubPagesUrl: 'https://kittycong.github.io/guro_dangbun/',
+  vercelProject: 'guro-dangbun',
+  vercelUrl: '',
 };
 
 // ── load/save (localStorage) ──
@@ -1328,26 +1395,31 @@ function nextEmployeeName(currentName, employees, step) {
 }
 
 function getEmployeeTeam(name) {
-  return state.employeeTeams?.[name] || '';
+  const team = state.employeeTeams?.[name] || '';
+  if (team === '행정팀') return '사무행정팀';
+  if (team === '사업팀') return '복지사업팀';
+  return team;
 }
 
 function getTeamClass(name) {
   const team = getEmployeeTeam(name);
-  if (team === '사업팀') return 'team-business';
-  if (team === '행정팀') return 'team-admin';
+  if (team === '근로지원인') return 'team-worker';
+  if (team === '사무행정팀') return 'team-admin';
   if (team === '활동지원팀') return 'team-support';
+  if (team === '복지사업팀') return 'team-welfare';
   return '';
 }
 
 function getTeamColorClass(team) {
-  if (team === '사업팀') return 'team-business';
-  if (team === '행정팀') return 'team-admin';
+  if (team === '근로지원인') return 'team-worker';
+  if (team === '사무행정팀') return 'team-admin';
   if (team === '활동지원팀') return 'team-support';
+  if (team === '복지사업팀') return 'team-welfare';
   return '';
 }
 
 function teamOptions(selectedTeam = '') {
-  return ['', '사업팀', '행정팀', '활동지원팀'].map(team => {
+  return ['', '근로지원인', '사무행정팀', '활동지원팀', '복지사업팀'].map(team => {
     const label = team || '팀 없음';
     return `<option value="${team}" ${team === selectedTeam ? 'selected' : ''}>${label}</option>`;
   }).join('');
@@ -1358,7 +1430,7 @@ function getFridayCleaningTeam(ds) {
   if (date.getDay() !== 5) return null;
   const base = new Date('2026-05-29T00:00:00');
   const weeks = Math.floor((date - base) / (7 * 24 * 60 * 60 * 1000));
-  const teams = ['행정팀', '활동지원팀', '사업팀'];
+  const teams = ['사무행정팀', '활동지원팀', '복지사업팀'];
   return teams[((weeks % teams.length) + teams.length) % teams.length];
 }
 
@@ -1439,7 +1511,10 @@ const MONTH_KO = ['','1월','2월','3월','4월','5월','6월','7월','8월','9�
 
 function renderCalendar() {
   const y = state.viewYear, m = state.viewMonth;
+  const next = getRelativeMonth(y, m, 1);
+  document.getElementById('monthRangeLabel').textContent = `${MONTH_KO[m]} + ${MONTH_KO[next.month]}`;
   document.getElementById('monthLabel').textContent = `${y}년 ${MONTH_KO[m]}`;
+  document.getElementById('nextMonthLabel').textContent = `${next.year}년 ${MONTH_KO[next.month]}`;
 
   // month jump buttons
   const btns = document.getElementById('monthJumpBtns');
@@ -1452,6 +1527,21 @@ function renderCalendar() {
     btns.appendChild(b);
   }
 
+  renderMonthGrid('calGrid', y, m);
+  renderMonthGrid('nextCalGrid', next.year, next.month);
+
+  // Today banner
+  const today = new Date();
+  renderTodayBanner(dateStr(today.getFullYear(), today.getMonth()+1, today.getDate()));
+  renderDutyTable();
+}
+
+function getRelativeMonth(year, month, offset) {
+  const d = new Date(year, month - 1 + offset, 1);
+  return { year: d.getFullYear(), month: d.getMonth() + 1 };
+}
+
+function renderMonthGrid(gridId, y, m) {
   const today = new Date();
   const todayStr = dateStr(today.getFullYear(), today.getMonth()+1, today.getDate());
 
@@ -1459,7 +1549,7 @@ function renderCalendar() {
   const firstGridCol = firstDay === 6 ? 0 : firstDay;
   const daysInMonth = new Date(y, m, 0).getDate();
 
-  const grid = document.getElementById('calGrid');
+  const grid = document.getElementById(gridId);
   grid.innerHTML = '';
 
   // empty cells
@@ -1492,6 +1582,12 @@ function renderCalendar() {
     if (!isHol && !isSun && !isSat) {
       cell.title = '클릭해서 당번 직접 변경';
       cell.onclick = () => openManualDutyModal(ds);
+      cell.ondragover = ev => {
+        ev.preventDefault();
+        cell.classList.add('drop-target');
+      };
+      cell.ondragleave = () => cell.classList.remove('drop-target');
+      cell.ondrop = ev => handleDutyDrop(ev, ds, cell);
     }
 
     // date number
@@ -1511,12 +1607,16 @@ function renderCalendar() {
       const hyuChip = document.createElement('div');
       hyuChip.className = ['duty-chip', 'hyu', getTeamClass(duty.hyu), duty.manual ? 'manual' : ''].filter(Boolean).join(' ');
       hyuChip.textContent = `🏠 ${duty.hyu}`;
+      hyuChip.draggable = true;
+      hyuChip.ondragstart = ev => handleDutyDragStart(ev, ds);
       cell.appendChild(hyuChip);
 
       if (duty.ga) {
         const gaChip = document.createElement('div');
         gaChip.className = ['duty-chip', 'ga', getTeamClass(duty.ga), duty.manual ? 'manual' : ''].filter(Boolean).join(' ');
         gaChip.textContent = `💧 ${duty.ga}`;
+        gaChip.draggable = true;
+        gaChip.ondragstart = ev => handleDutyDragStart(ev, ds);
         cell.appendChild(gaChip);
       }
 
@@ -1540,9 +1640,6 @@ function renderCalendar() {
 
     grid.appendChild(cell);
   }
-
-  // Today banner
-  renderTodayBanner(todayStr);
 }
 
 function renderTodayBanner(todayStr) {
@@ -1594,6 +1691,51 @@ function fillEmployeeSelect(selectEl, employees, selectedName, includeEmpty = fa
   });
 }
 
+function handleDutyDragStart(ev, fromDate) {
+  const duty = getDuty(fromDate);
+  if (!duty) return;
+  ev.dataTransfer.effectAllowed = 'move';
+  ev.dataTransfer.setData('application/json', JSON.stringify({
+    fromDate,
+    hyu: duty.hyu,
+    ga: duty.ga || '',
+  }));
+}
+
+async function handleDutyDrop(ev, toDate, cell) {
+  ev.preventDefault();
+  cell.classList.remove('drop-target');
+  const raw = ev.dataTransfer.getData('application/json');
+  if (!raw) return;
+  const moved = JSON.parse(raw);
+  if (!moved.hyu || moved.fromDate === toDate) return;
+
+  const targetDuty = getDuty(toDate);
+  state.manualDuties[toDate] = { hyu: moved.hyu, ga: moved.ga };
+  if (targetDuty) state.manualDuties[moved.fromDate] = { hyu: targetDuty.hyu, ga: targetDuty.ga || '' };
+  saveData(); renderAll();
+  showToast(`${moved.fromDate} ↔ ${toDate} 당번 교환 저장 완료`);
+  await saveSharedSettingsIfConfigured();
+}
+
+async function saveSharedSettingsIfConfigured() {
+  if (!integrationConfig.supabaseUrl || !integrationConfig.supabaseAnonKey) return;
+  try {
+    const client = getSupabaseClient();
+    const { error } = await client
+      .from(integrationConfig.supabaseTable)
+      .upsert({
+        id: integrationConfig.supabaseRecordId,
+        data: buildSettingsPayload(),
+        updated_at: new Date().toISOString(),
+      });
+    if (error) throw error;
+    showToast('변경값 Supabase 공동 저장 완료');
+  } catch (e) {
+    showToast('로컬 저장 완료 · Supabase 저장 실패');
+  }
+}
+
 function openManualDutyModal(ds) {
   const duty = getDuty(ds);
   const employees = activeEmployeesOn(ds);
@@ -1623,6 +1765,7 @@ function saveManualDuty() {
   state.manualDuties[ds] = { hyu, ga };
   saveData(); renderAll(); closeManualDutyModal();
   showToast('날짜별 당번 변경 저장 완료');
+  saveSharedSettingsIfConfigured();
 }
 
 function clearManualDuty() {
@@ -1631,11 +1774,63 @@ function clearManualDuty() {
   delete state.manualDuties[ds];
   saveData(); renderAll(); closeManualDutyModal();
   showToast('날짜별 직접 변경 해제 완료');
+  saveSharedSettingsIfConfigured();
 }
 
 // ══════════════════════════════════════════
 //  SEQUENCE TABLE
 // ══════════════════════════════════════════
+function renderDutyTable() {
+  const tbody = document.getElementById('dutyTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  const months = [
+    { year: state.viewYear, month: state.viewMonth },
+    getRelativeMonth(state.viewYear, state.viewMonth, 1),
+  ];
+  const today = new Date();
+  const todayStr = dateStr(today.getFullYear(), today.getMonth()+1, today.getDate());
+
+  months.forEach(({ year, month }) => {
+    const days = new Date(year, month, 0).getDate();
+    for (let d = 1; d <= days; d++) {
+      const ds = dateStr(year, month, d);
+      const dt = new Date(year, month-1, d);
+      const dow = dt.getDay();
+      const isHol = isHoliday(ds);
+      const isWknd = dow === 0 || dow === 6;
+      const duty = getDuty(ds);
+      const cleaningTeam = isHol ? null : getFridayCleaningTeam(ds);
+      if (dow === 6) continue;
+
+      let receiver = '-', humi = '-', clean = '-', note = '';
+      if (isHol) note = getHolidayName(ds);
+      else if (isWknd) note = '일요일';
+      else if (duty) {
+        receiver = `<span class="hyu-badge ${getTeamClass(duty.hyu)}">🏠 ${escapeHtml(duty.hyu)}</span>`;
+        humi = duty.ga ? `<span class="ga-badge ${getTeamClass(duty.ga)}">💧 ${escapeHtml(duty.ga)}</span>` : '-';
+      }
+      if (cleaningTeam) clean = `<span class="${getTeamColorClass(cleaningTeam)}" style="padding:4px 10px;border-radius:8px;font-size:16px;font-weight:800">🧹 ${cleaningTeam}</span>`;
+      if (duty?.manual) note += `${note ? ' · ' : ''}직접 변경`;
+      if (ds === todayStr) note += `${note ? ' · ' : ''}오늘`;
+
+      const tr = document.createElement('tr');
+      if (ds === todayStr) tr.style.outline = '3px solid var(--accent)';
+      tr.innerHTML = `
+        <td>${year}.${pad2(month)}</td>
+        <td style="font-family:'DM Mono',monospace">${ds}</td>
+        <td>${DAY_KO[dow]}요일</td>
+        <td>${receiver}</td>
+        <td>${humi}</td>
+        <td>${clean}</td>
+        <td>${escapeHtml(note)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  });
+}
+
 function renderSequence() {
   const y = parseInt(document.getElementById('seqYear').value);
   const mFilter = document.getElementById('seqMonth').value;
@@ -1814,6 +2009,8 @@ function readIntegrationConfig() {
     githubBranch: document.getElementById('githubBranch').value.trim() || 'main2',
     githubDataPath: document.getElementById('githubDataPath').value.trim() || 'danbun_data.json',
     githubPagesUrl: document.getElementById('githubPagesUrl').value.trim() || 'https://kittycong.github.io/guro_dangbun/',
+    vercelProject: document.getElementById('vercelProject').value.trim() || 'guro-dangbun',
+    vercelUrl: document.getElementById('vercelUrl').value.trim(),
   };
   return integrationConfig;
 }
@@ -1828,6 +2025,8 @@ function renderIntegrationConfig() {
   document.getElementById('githubBranch').value = integrationConfig.githubBranch || 'main2';
   document.getElementById('githubDataPath').value = integrationConfig.githubDataPath || 'danbun_data.json';
   document.getElementById('githubPagesUrl').value = integrationConfig.githubPagesUrl || 'https://kittycong.github.io/guro_dangbun/';
+  document.getElementById('vercelProject').value = integrationConfig.vercelProject || 'guro-dangbun';
+  document.getElementById('vercelUrl').value = integrationConfig.vercelUrl || '';
 }
 
 function saveIntegrationConfig() {
@@ -2250,6 +2449,7 @@ function switchTab(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   event.currentTarget.classList.add('active');
   document.getElementById('page-'+name).classList.add('active');
+  if (name === 'table') renderDutyTable();
   if (name === 'sequence') renderSequence();
   if (name === 'settings') { renderEmployees(); renderHolidays(); renderPersonnelChanges(); renderIntegrationConfig(); renderHumiSettings(); renderDutySettings(); renderSettingsSummary(); }
 }
