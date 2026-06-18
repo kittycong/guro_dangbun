@@ -1280,7 +1280,17 @@ body {
             <option value="leave">퇴사</option>
           </select>
           <input class="input-field" id="newChangeName" placeholder="직원 이름" maxlength="10" style="max-width:160px">
+          <select class="input-field" id="newChangeAfter" style="max-width:180px">
+            <option value="">순서 맨 뒤에 넣기</option>
+          </select>
+          <label class="check-pill" style="max-width:260px">
+            <input type="checkbox" id="newChangeAnchor" checked>
+            반영일 당일 이 사람부터 시작
+          </label>
           <button class="btn btn-primary" onclick="addPersonnelChange()">추가</button>
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-top:10px">
+          입사자는 선택한 직원 바로 뒤 순서에 끼워 넣습니다. 체크하면 반영일 당일 당번을 신규 입사자로 고정하고, 다음 근무일부터 기존 순서가 이어집니다.
         </div>
       </div>
     </div>
@@ -1394,7 +1404,7 @@ let DEFAULT_HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DEFAULT_DUTY_COMMON_DATA = [];
 let DEFAULT_DUTY_HUMI_DATA = [];
 let DEFAULT_DUTY_NOTES_DATA = [];
-const SCHEDULE_VERSION = '2026-07-new-hires-v5';
+const SCHEDULE_VERSION = '2026-06-new-hire-settings-v6';
 const LEGACY_DEFAULT_EMPLOYEES = [
   "박수빈", "최수연", "송지은", "김휘원", "김유리",
   "최유나", "김주진", "김은서", "권은지", "조승민",
@@ -2622,6 +2632,7 @@ function renderPersonnelChanges() {
   const ul = document.getElementById('personnelChangeList');
   ul.innerHTML = '';
   const sorted = [...(state.personnelChanges || [])].sort((a,b) => a.date.localeCompare(b.date));
+  renderPersonnelChangeAfterOptions();
 
   if (!sorted.length) {
     ul.innerHTML = '<li style="font-size:12px;color:var(--text2);padding:10px 0">등록된 입사·퇴사 반영일이 없습니다.</li>';
@@ -2631,22 +2642,43 @@ function renderPersonnelChanges() {
   sorted.forEach((ch, idx) => {
     const originalIdx = state.personnelChanges.indexOf(ch);
     const typeLabel = ch.type === 'leave' ? '퇴사' : '입사';
+    const anchorName = getScheduleAnchor(ch.date);
+    const detail = [
+      ch.after ? `${escapeHtml(ch.after)} 뒤에 끼워넣기` : (ch.type === 'join' ? '순서 맨 뒤에 넣기' : ''),
+      anchorName === ch.name ? '반영일 당일 시작' : ''
+    ].filter(Boolean).join(' · ');
     const li = document.createElement('li');
     li.className = 'change-item';
     li.innerHTML = `
       <span class="change-date">${escapeHtml(ch.date)}</span>
       <span class="change-type ${ch.type === 'leave' ? 'leave' : 'join'}">${typeLabel}</span>
-      <span class="change-name">${escapeHtml(ch.name)}</span>
+      <span class="change-name">${escapeHtml(ch.name)}${detail ? `<br><small style="font-weight:600;color:var(--text2)">${detail}</small>` : ''}</span>
       <button class="btn btn-sm btn-danger" onclick="removePersonnelChange(${originalIdx})">삭제</button>
     `;
     ul.appendChild(li);
   });
 }
 
+function renderPersonnelChangeAfterOptions() {
+  const select = document.getElementById('newChangeAfter');
+  if (!select) return;
+  const selected = select.value;
+  const names = new Set([...(state.employees || [])]);
+  (state.personnelChanges || [])
+    .filter(ch => ch.type === 'join')
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .forEach(ch => names.add(ch.name));
+  select.innerHTML = '<option value="">순서 맨 뒤에 넣기</option>' +
+    [...names].map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)} 뒤에 넣기</option>`).join('');
+  if ([...names].includes(selected)) select.value = selected;
+}
+
 function addPersonnelChange() {
   const date = document.getElementById('newChangeDate').value;
   const type = document.getElementById('newChangeType').value;
   const name = document.getElementById('newChangeName').value.trim();
+  const after = document.getElementById('newChangeAfter')?.value || '';
+  const anchorOnDate = Boolean(document.getElementById('newChangeAnchor')?.checked);
 
   if (!date || !name) return showToast('반영일과 직원 이름을 입력하세요');
   if (!['join', 'leave'].includes(type)) return showToast('입사 또는 퇴사를 선택하세요');
@@ -2655,15 +2687,26 @@ function addPersonnelChange() {
     return showToast('이미 등록된 인사 변경입니다');
   }
 
-  state.personnelChanges.push({ date, type, name });
+  const change = { date, type, name };
+  if (type === 'join' && after) change.after = after;
+  state.personnelChanges.push(change);
+  if (type === 'join' && anchorOnDate) {
+    state.scheduleAnchors = (state.scheduleAnchors || []).filter(anchor => anchor.date !== date);
+    state.scheduleAnchors.push({ date, name });
+    state.manualDuties = filterManualDutiesBefore(state.manualDuties, date);
+  }
   document.getElementById('newChangeDate').value = '';
   document.getElementById('newChangeName').value = '';
+  if (document.getElementById('newChangeAfter')) document.getElementById('newChangeAfter').value = '';
   saveData(); rebuildSchedule(); renderAll();
   showToast('입사·퇴사 반영일 추가 완료');
 }
 
 function removePersonnelChange(idx) {
-  state.personnelChanges.splice(idx, 1);
+  const [removed] = state.personnelChanges.splice(idx, 1);
+  if (removed) {
+    state.scheduleAnchors = (state.scheduleAnchors || []).filter(anchor => !(anchor.date === removed.date && anchor.name === removed.name));
+  }
   saveData(); rebuildSchedule(); renderAll();
   showToast('입사·퇴사 반영일 삭제 완료');
 }
