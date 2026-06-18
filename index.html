@@ -1394,7 +1394,7 @@ let DEFAULT_HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DEFAULT_DUTY_COMMON_DATA = [];
 let DEFAULT_DUTY_HUMI_DATA = [];
 let DEFAULT_DUTY_NOTES_DATA = [];
-const SCHEDULE_VERSION = '2026-06-photo-order-v3';
+const SCHEDULE_VERSION = '2026-06-photo-anchors-v4';
 const LEGACY_DEFAULT_EMPLOYEES = [
   "박수빈", "최수연", "송지은", "김휘원", "김유리",
   "최유나", "김주진", "김은서", "권은지", "조승민",
@@ -2860,9 +2860,11 @@ function renderAll() {
       !sameJson(saved.holidays, mergedHolidays) ||
       !sameJson(saved.scheduleAnchors, mergedAnchors)
     ) {
+      const anchorsChanged = !sameJson(saved.scheduleAnchors, mergedAnchors);
       saved.personnelChanges = mergedPersonnelChanges;
       saved.holidays = mergedHolidays;
       saved.scheduleAnchors = mergedAnchors;
+      if (anchorsChanged) saved.manualDuties = filterManualDutiesBefore(saved.manualDuties, '2026-06-01');
       saved.scheduleVersion = SCHEDULE_VERSION;
       localStorage.setItem('danbun_v2', JSON.stringify(saved));
     }
