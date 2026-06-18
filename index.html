@@ -1388,12 +1388,13 @@ body {
 let DEFAULT_EMPLOYEES = [];
 let DEFAULT_HOLIDAYS = [];
 let DEFAULT_PERSONNEL_CHANGES = [];
+let DEFAULT_SCHEDULE_ANCHORS = [];
 let DEFAULT_START = { date: '2026-04-01', empIndex: 10 };
 let DEFAULT_HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DEFAULT_DUTY_COMMON_DATA = [];
 let DEFAULT_DUTY_HUMI_DATA = [];
 let DEFAULT_DUTY_NOTES_DATA = [];
-const SCHEDULE_VERSION = '2026-07-required-defaults-v2';
+const SCHEDULE_VERSION = '2026-06-photo-order-v3';
 const LEGACY_DEFAULT_EMPLOYEES = [
   "박수빈", "최수연", "송지은", "김휘원", "김유리",
   "최유나", "김주진", "김은서", "권은지", "조승민",
@@ -1408,6 +1409,11 @@ const JUNE_PHOTO_DEFAULT_EMPLOYEES = [
   "송지은", "김유리", "최유나", "김주진", "김은서",
   "권은지", "조승민", "노현숙", "정채윤", "주덕원",
   "최수연", "김휘원"
+];
+const PHOTO_ORDER_EMPLOYEES = [
+  "김은서", "권은지", "조승민", "노현숙", "정채윤",
+  "주덕원", "최수연", "김휘원", "최유나", "송지은",
+  "김유리", "김주진"
 ];
 let HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DUTY_COMMON_DATA = [];
@@ -1442,6 +1448,7 @@ function saveData() {
     employeeTeams: state.employeeTeams,
     holidays: state.holidays,
     personnelChanges: state.personnelChanges,
+    scheduleAnchors: state.scheduleAnchors,
     manualDuties: state.manualDuties,
     startPoint: state.startPoint,
     humiMonths: HUMI_MONTHS,
@@ -1458,6 +1465,7 @@ const state = {
   employeeTeams: {},
   holidays: [],
   personnelChanges: [],
+  scheduleAnchors: [],
   manualDuties: {},
   startPoint: { ...DEFAULT_START },
   viewYear: new Date().getFullYear(),
@@ -1520,6 +1528,24 @@ function sameJson(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+function filterManualDutiesBefore(manualDuties = {}, beforeDate = '2026-06-01') {
+  return Object.fromEntries(
+    Object.entries(manualDuties || {}).filter(([date]) => date < beforeDate)
+  );
+}
+
+function applyPhotoOrderDefaults(saved) {
+  if (!saved) return saved;
+  saved.employees = [...DEFAULT_EMPLOYEES];
+  saved.startPoint = { ...DEFAULT_START };
+  saved.personnelChanges = [...DEFAULT_PERSONNEL_CHANGES];
+  saved.scheduleAnchors = [...DEFAULT_SCHEDULE_ANCHORS];
+  saved.holidays = mergeByDateName(saved.holidays, DEFAULT_HOLIDAYS);
+  saved.manualDuties = filterManualDutiesBefore(saved.manualDuties, '2026-06-01');
+  saved.scheduleVersion = SCHEDULE_VERSION;
+  return saved;
+}
+
 function buildSettingsPayload() {
   return {
     version: 3,
@@ -1528,6 +1554,7 @@ function buildSettingsPayload() {
     employeeTeams: state.employeeTeams,
     holidays: state.holidays,
     personnelChanges: state.personnelChanges,
+    scheduleAnchors: state.scheduleAnchors,
     manualDuties: state.manualDuties,
     startPoint: state.startPoint,
     humiMonths: HUMI_MONTHS,
@@ -1556,8 +1583,14 @@ function applySettingsPayload(data) {
   if (data.personnelChanges) {
     state.personnelChanges = data.personnelChanges
       .filter(ch => ch?.date && ch?.name && ['join', 'leave'].includes(ch.type))
-      .map(ch => ({ date: String(ch.date), type: ch.type, name: String(ch.name).trim() }))
+      .map(ch => ({ date: String(ch.date), type: ch.type, name: String(ch.name).trim(), after: ch.after ? String(ch.after).trim() : '' }))
       .filter(ch => ch.name);
+  }
+  if (data.scheduleAnchors) {
+    state.scheduleAnchors = data.scheduleAnchors
+      .filter(anchor => anchor?.date && anchor?.name)
+      .map(anchor => ({ date: String(anchor.date), name: String(anchor.name).trim() }))
+      .filter(anchor => anchor.name);
   }
   if (data.startPoint) state.startPoint = data.startPoint;
   if (data.manualDuties) state.manualDuties = data.manualDuties;
@@ -1581,11 +1614,19 @@ function activeEmployeesOn(targetDateStr) {
   changes.forEach(ch => {
     const name = String(ch.name || '').trim();
     if (!name) return;
-    if (ch.type === 'join' && !employees.includes(name)) employees.push(name);
+    if (ch.type === 'join' && !employees.includes(name)) {
+      const afterIdx = ch.after ? employees.indexOf(ch.after) : -1;
+      if (afterIdx >= 0) employees.splice(afterIdx + 1, 0, name);
+      else employees.push(name);
+    }
     if (ch.type === 'leave') employees = employees.filter(emp => emp !== name);
   });
 
   return employees;
+}
+
+function getScheduleAnchor(dateStr) {
+  return (state.scheduleAnchors || []).find(anchor => anchor.date === dateStr)?.name || '';
 }
 
 function nextEmployeeName(currentName, employees, step) {
@@ -1652,6 +1693,8 @@ function buildScheduleMap() {
     if (!isWeekend(cur) && !isHoliday(ds)) {
       const active = activeEmployeesOn(ds);
       if (active.length) {
+        const anchorName = getScheduleAnchor(ds);
+        if (anchorName && active.includes(anchorName)) currentName = anchorName;
         const hyu = active.includes(currentName) ? currentName : active[0];
         const ga = active[(active.indexOf(hyu) + 1) % active.length];
         map[ds] = { hyu, ga };
@@ -2706,6 +2749,7 @@ function clearSavedData() {
   state.employeeTeams = {};
   state.holidays = [...DEFAULT_HOLIDAYS];
   state.personnelChanges = [...DEFAULT_PERSONNEL_CHANGES];
+  state.scheduleAnchors = [...DEFAULT_SCHEDULE_ANCHORS];
   state.manualDuties = {};
   state.startPoint = { ...DEFAULT_START };
   HUMI_MONTHS = [...DEFAULT_HUMI_MONTHS];
@@ -2779,6 +2823,7 @@ function renderAll() {
     DEFAULT_EMPLOYEES = json.employees || [];
     DEFAULT_HOLIDAYS  = json.holidays  || [];
     DEFAULT_PERSONNEL_CHANGES = json.personnelChanges || [];
+    DEFAULT_SCHEDULE_ANCHORS = json.scheduleAnchors || [];
     DEFAULT_START     = json.startPoint || DEFAULT_START;
     DEFAULT_HUMI_MONTHS = json.humiMonths || DEFAULT_HUMI_MONTHS;
     DEFAULT_DUTY_COMMON_DATA = cloneDutyItems(json.dutyCommon || []);
@@ -2799,25 +2844,25 @@ function renderAll() {
     sameStringArray(saved?.employees || [], MAY_PHOTO_DEFAULT_EMPLOYEES) ||
     sameStringArray(saved?.employees || [], JUNE_PHOTO_DEFAULT_EMPLOYEES);
   if (saved && saved.scheduleVersion !== SCHEDULE_VERSION && savedUsesOldDefault) {
-    saved.employees = [...DEFAULT_EMPLOYEES];
-    saved.startPoint = { ...DEFAULT_START };
-    saved.personnelChanges = [...DEFAULT_PERSONNEL_CHANGES];
-    saved.holidays = [...DEFAULT_HOLIDAYS];
-    saved.scheduleVersion = SCHEDULE_VERSION;
+    applyPhotoOrderDefaults(saved);
     localStorage.setItem('danbun_v2', JSON.stringify(saved));
   }
   if (saved && saved.scheduleVersion !== SCHEDULE_VERSION) {
-    saved.personnelChanges = mergePersonnelChanges(saved.personnelChanges, DEFAULT_PERSONNEL_CHANGES);
-    saved.holidays = mergeByDateName(saved.holidays, DEFAULT_HOLIDAYS);
-    saved.scheduleVersion = SCHEDULE_VERSION;
+    applyPhotoOrderDefaults(saved);
     localStorage.setItem('danbun_v2', JSON.stringify(saved));
   }
   if (saved) {
     const mergedPersonnelChanges = mergePersonnelChanges(saved.personnelChanges, DEFAULT_PERSONNEL_CHANGES);
     const mergedHolidays = mergeByDateName(saved.holidays, DEFAULT_HOLIDAYS);
-    if (!sameJson(saved.personnelChanges, mergedPersonnelChanges) || !sameJson(saved.holidays, mergedHolidays)) {
+    const mergedAnchors = mergeByDateName(saved.scheduleAnchors, DEFAULT_SCHEDULE_ANCHORS);
+    if (
+      !sameJson(saved.personnelChanges, mergedPersonnelChanges) ||
+      !sameJson(saved.holidays, mergedHolidays) ||
+      !sameJson(saved.scheduleAnchors, mergedAnchors)
+    ) {
       saved.personnelChanges = mergedPersonnelChanges;
       saved.holidays = mergedHolidays;
+      saved.scheduleAnchors = mergedAnchors;
       saved.scheduleVersion = SCHEDULE_VERSION;
       localStorage.setItem('danbun_v2', JSON.stringify(saved));
     }
@@ -2826,6 +2871,7 @@ function renderAll() {
   state.employeeTeams = saved?.employeeTeams || {};
   state.holidays   = saved?.holidays   || [...DEFAULT_HOLIDAYS];
   state.personnelChanges = saved?.personnelChanges || [...DEFAULT_PERSONNEL_CHANGES];
+  state.scheduleAnchors = saved?.scheduleAnchors || [...DEFAULT_SCHEDULE_ANCHORS];
   state.manualDuties = saved?.manualDuties || {};
   state.startPoint = saved?.startPoint || { ...DEFAULT_START };
   HUMI_MONTHS       = saved?.humiMonths || HUMI_MONTHS;
