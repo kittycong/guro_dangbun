@@ -1393,11 +1393,16 @@ let DEFAULT_HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DEFAULT_DUTY_COMMON_DATA = [];
 let DEFAULT_DUTY_HUMI_DATA = [];
 let DEFAULT_DUTY_NOTES_DATA = [];
-const SCHEDULE_VERSION = '2026-05-photo-v1';
+const SCHEDULE_VERSION = '2026-06-photo-v1';
 const LEGACY_DEFAULT_EMPLOYEES = [
   "박수빈", "최수연", "송지은", "김휘원", "김유리",
   "최유나", "김주진", "김은서", "권은지", "조승민",
   "노현숙", "인상필", "정채윤", "강지나", "주덕원"
+];
+const MAY_PHOTO_DEFAULT_EMPLOYEES = [
+  "송지은", "김유리", "최유나", "김주진", "김은서",
+  "권은지", "조승민", "노현숙", "인상필", "정채윤",
+  "강지나", "주덕원", "최수연", "김휘원"
 ];
 let HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DUTY_COMMON_DATA = [];
@@ -2756,7 +2761,10 @@ function renderAll() {
 
   // localStorage 우선 적용
   const saved = loadData();
-  if (saved && saved.scheduleVersion !== SCHEDULE_VERSION && sameStringArray(saved.employees || [], LEGACY_DEFAULT_EMPLOYEES)) {
+  const savedUsesOldDefault =
+    sameStringArray(saved?.employees || [], LEGACY_DEFAULT_EMPLOYEES) ||
+    sameStringArray(saved?.employees || [], MAY_PHOTO_DEFAULT_EMPLOYEES);
+  if (saved && saved.scheduleVersion !== SCHEDULE_VERSION && savedUsesOldDefault) {
     saved.employees = [...DEFAULT_EMPLOYEES];
     saved.startPoint = { ...DEFAULT_START };
     saved.personnelChanges = [...DEFAULT_PERSONNEL_CHANGES];
