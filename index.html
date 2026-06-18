@@ -1492,6 +1492,30 @@ function sameStringArray(a = [], b = []) {
   return a.length === b.length && a.every((value, idx) => value === b[idx]);
 }
 
+function mergeByDateName(currentItems = [], defaultItems = []) {
+  const merged = Array.isArray(currentItems) ? [...currentItems] : [];
+  defaultItems.forEach(item => {
+    if (!merged.some(existing => existing?.date === item?.date && existing?.name === item?.name)) {
+      merged.push({ ...item });
+    }
+  });
+  return merged;
+}
+
+function mergePersonnelChanges(currentChanges = [], defaultChanges = []) {
+  const merged = Array.isArray(currentChanges) ? [...currentChanges] : [];
+  defaultChanges.forEach(change => {
+    if (!merged.some(existing =>
+      existing?.date === change?.date &&
+      existing?.type === change?.type &&
+      existing?.name === change?.name
+    )) {
+      merged.push({ ...change });
+    }
+  });
+  return merged;
+}
+
 function buildSettingsPayload() {
   return {
     version: 3,
@@ -2774,6 +2798,13 @@ function renderAll() {
     saved.employees = [...DEFAULT_EMPLOYEES];
     saved.startPoint = { ...DEFAULT_START };
     saved.personnelChanges = [...DEFAULT_PERSONNEL_CHANGES];
+    saved.holidays = [...DEFAULT_HOLIDAYS];
+    saved.scheduleVersion = SCHEDULE_VERSION;
+    localStorage.setItem('danbun_v2', JSON.stringify(saved));
+  }
+  if (saved && saved.scheduleVersion !== SCHEDULE_VERSION) {
+    saved.personnelChanges = mergePersonnelChanges(saved.personnelChanges, DEFAULT_PERSONNEL_CHANGES);
+    saved.holidays = mergeByDateName(saved.holidays, DEFAULT_HOLIDAYS);
     saved.scheduleVersion = SCHEDULE_VERSION;
     localStorage.setItem('danbun_v2', JSON.stringify(saved));
   }
