@@ -1393,7 +1393,7 @@ let DEFAULT_HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DEFAULT_DUTY_COMMON_DATA = [];
 let DEFAULT_DUTY_HUMI_DATA = [];
 let DEFAULT_DUTY_NOTES_DATA = [];
-const SCHEDULE_VERSION = '2026-07-join-lee-soyoung-v1';
+const SCHEDULE_VERSION = '2026-07-required-defaults-v2';
 const LEGACY_DEFAULT_EMPLOYEES = [
   "박수빈", "최수연", "송지은", "김휘원", "김유리",
   "최유나", "김주진", "김은서", "권은지", "조승민",
@@ -1514,6 +1514,10 @@ function mergePersonnelChanges(currentChanges = [], defaultChanges = []) {
     }
   });
   return merged;
+}
+
+function sameJson(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 function buildSettingsPayload() {
@@ -2807,6 +2811,16 @@ function renderAll() {
     saved.holidays = mergeByDateName(saved.holidays, DEFAULT_HOLIDAYS);
     saved.scheduleVersion = SCHEDULE_VERSION;
     localStorage.setItem('danbun_v2', JSON.stringify(saved));
+  }
+  if (saved) {
+    const mergedPersonnelChanges = mergePersonnelChanges(saved.personnelChanges, DEFAULT_PERSONNEL_CHANGES);
+    const mergedHolidays = mergeByDateName(saved.holidays, DEFAULT_HOLIDAYS);
+    if (!sameJson(saved.personnelChanges, mergedPersonnelChanges) || !sameJson(saved.holidays, mergedHolidays)) {
+      saved.personnelChanges = mergedPersonnelChanges;
+      saved.holidays = mergedHolidays;
+      saved.scheduleVersion = SCHEDULE_VERSION;
+      localStorage.setItem('danbun_v2', JSON.stringify(saved));
+    }
   }
   state.employees  = saved?.employees  || [...DEFAULT_EMPLOYEES];
   state.employeeTeams = saved?.employeeTeams || {};
