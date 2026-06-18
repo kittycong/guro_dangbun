@@ -10,8 +10,8 @@
   },
   "personnelChanges": [
     { "date": "2026-06-17", "type": "join", "name": "홍민서", "after": "김유리" },
-    { "date": "2026-07-01", "type": "join", "name": "유완정", "after": "홍민서" },
-    { "date": "2026-07-02", "type": "join", "name": "이소영", "after": "유완정" }
+    { "date": "2026-07-22", "type": "join", "name": "유완정", "after": "최유나" },
+    { "date": "2026-07-29", "type": "join", "name": "이소영", "after": "김주진" }
   ],
   "scheduleAnchors": [
     { "date": "2026-06-01", "name": "김은서" },
@@ -34,7 +34,9 @@
     { "date": "2026-06-25", "name": "정채윤" },
     { "date": "2026-06-26", "name": "주덕원" },
     { "date": "2026-06-29", "name": "최수연" },
-    { "date": "2026-06-30", "name": "김휘원" }
+    { "date": "2026-06-30", "name": "김휘원" },
+    { "date": "2026-07-22", "name": "유완정" },
+    { "date": "2026-07-29", "name": "이소영" }
   ],
   "humiMonths": [9, 10, 11, 12, 1],
   "holidays": [
