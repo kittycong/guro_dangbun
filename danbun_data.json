@@ -11,7 +11,8 @@
   "personnelChanges": [
     { "date": "2026-06-17", "type": "join", "name": "홍민서", "after": "김유리" },
     { "date": "2026-06-22", "type": "join", "name": "유완정", "after": "김은서" },
-    { "date": "2026-06-29", "type": "join", "name": "이소영", "after": "정채윤" }
+    { "date": "2026-06-29", "type": "join", "name": "이소영", "after": "정채윤" },
+    { "date": "2026-07-01", "type": "leave", "name": "최유나" }
   ],
   "scheduleAnchors": [
     { "date": "2026-06-01", "name": "김은서" },
