@@ -671,6 +671,7 @@ body {
 }
 .change-type.join { background: var(--accent-light); color: var(--accent); }
 .change-type.leave { background: var(--red-light); color: var(--red); }
+.change-type.promote { background: var(--gold-light); color: var(--gold); }
 .change-name { font-size: 13px; font-weight: 700; }
 @media (max-width: 700px) {
   .change-item { grid-template-columns: 1fr auto; }
@@ -1269,15 +1270,16 @@ body {
 
     <!-- 인사 변경 관리 -->
     <div class="card wide-card">
-      <div class="card-header">🧑‍💼 입사·퇴사 반영일 관리</div>
+      <div class="card-header">🧑‍💼 입사·퇴사·팀장승급 반영일 관리</div>
       <div class="card-body">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">입사자는 반영일부터 당번에 투입되고, 퇴사자는 반영일부터 제외됩니다. 반영일 이전의 기존 순서에는 영향을 주지 않습니다.</p>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">입사자는 반영일부터 당번에 투입되고, 퇴사·팀장승급자는 반영일부터 제외됩니다. 반영일 이전의 기존 순서에는 영향을 주지 않습니다.</p>
         <ul id="personnelChangeList" style="list-style:none;max-height:220px;overflow-y:auto"></ul>
         <div class="input-row" style="flex-wrap:wrap">
           <input class="input-field" type="date" id="newChangeDate" style="max-width:160px">
           <select class="input-field" id="newChangeType" style="max-width:120px">
             <option value="join">입사</option>
             <option value="leave">퇴사</option>
+            <option value="promote">팀장승급</option>
           </select>
           <input class="input-field" id="newChangeName" placeholder="직원 이름" maxlength="10" style="max-width:160px">
           <select class="input-field" id="newChangeAfter" style="max-width:180px">
@@ -1404,7 +1406,7 @@ let DEFAULT_HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DEFAULT_DUTY_COMMON_DATA = [];
 let DEFAULT_DUTY_HUMI_DATA = [];
 let DEFAULT_DUTY_NOTES_DATA = [];
-const SCHEDULE_VERSION = '2026-07-choiyuna-leave-v8';
+const SCHEDULE_VERSION = '2026-07-promotion-exclusion-v9';
 const LEGACY_DEFAULT_EMPLOYEES = [
   "박수빈", "최수연", "송지은", "김휘원", "김유리",
   "최유나", "김주진", "김은서", "권은지", "조승민",
@@ -1602,7 +1604,7 @@ function applySettingsPayload(data) {
   if (data.holidays) state.holidays = data.holidays.filter(h => h?.date && h?.name);
   if (data.personnelChanges) {
     state.personnelChanges = data.personnelChanges
-      .filter(ch => ch?.date && ch?.name && ['join', 'leave'].includes(ch.type))
+      .filter(ch => ch?.date && ch?.name && ['join', 'leave', 'promote'].includes(ch.type))
       .map(ch => ({ date: String(ch.date), type: ch.type, name: String(ch.name).trim(), after: ch.after ? String(ch.after).trim() : '' }))
       .filter(ch => ch.name);
   }
@@ -1639,7 +1641,7 @@ function activeEmployeesOn(targetDateStr) {
       if (afterIdx >= 0) employees.splice(afterIdx + 1, 0, name);
       else employees.push(name);
     }
-    if (ch.type === 'leave') employees = employees.filter(emp => emp !== name);
+    if (ch.type === 'leave' || ch.type === 'promote') employees = employees.filter(emp => emp !== name);
   });
 
   return employees;
@@ -2645,13 +2647,13 @@ function renderPersonnelChanges() {
   renderPersonnelChangeAfterOptions();
 
   if (!sorted.length) {
-    ul.innerHTML = '<li style="font-size:12px;color:var(--text2);padding:10px 0">등록된 입사·퇴사 반영일이 없습니다.</li>';
+    ul.innerHTML = '<li style="font-size:12px;color:var(--text2);padding:10px 0">등록된 입사·퇴사·팀장승급 반영일이 없습니다.</li>';
     return;
   }
 
   sorted.forEach((ch, idx) => {
     const originalIdx = state.personnelChanges.indexOf(ch);
-    const typeLabel = ch.type === 'leave' ? '퇴사' : '입사';
+    const typeLabel = ch.type === 'leave' ? '퇴사' : (ch.type === 'promote' ? '팀장승급' : '입사');
     const anchorName = getScheduleAnchor(ch.date);
     const detail = [
       ch.after ? `${escapeHtml(ch.after)} 뒤에 끼워넣기` : (ch.type === 'join' ? '순서 맨 뒤에 넣기' : ''),
@@ -2661,7 +2663,7 @@ function renderPersonnelChanges() {
     li.className = 'change-item';
     li.innerHTML = `
       <span class="change-date">${escapeHtml(ch.date)}</span>
-      <span class="change-type ${ch.type === 'leave' ? 'leave' : 'join'}">${typeLabel}</span>
+      <span class="change-type ${ch.type}">${typeLabel}</span>
       <span class="change-name">${escapeHtml(ch.name)}${detail ? `<br><small style="font-weight:600;color:var(--text2)">${detail}</small>` : ''}</span>
       <button class="btn btn-sm btn-danger" onclick="removePersonnelChange(${originalIdx})">삭제</button>
     `;
@@ -2691,7 +2693,7 @@ function addPersonnelChange() {
   const anchorOnDate = Boolean(document.getElementById('newChangeAnchor')?.checked);
 
   if (!date || !name) return showToast('반영일과 직원 이름을 입력하세요');
-  if (!['join', 'leave'].includes(type)) return showToast('입사 또는 퇴사를 선택하세요');
+  if (!['join', 'leave', 'promote'].includes(type)) return showToast('입사, 퇴사 또는 팀장승급을 선택하세요');
   if (type === 'join' && state.employees.includes(name)) return showToast('기본 직원 목록에 이미 있는 이름입니다');
   if (state.personnelChanges.some(ch => ch.date === date && ch.type === type && ch.name === name)) {
     return showToast('이미 등록된 인사 변경입니다');
@@ -2709,7 +2711,7 @@ function addPersonnelChange() {
   document.getElementById('newChangeName').value = '';
   if (document.getElementById('newChangeAfter')) document.getElementById('newChangeAfter').value = '';
   saveData(); rebuildSchedule(); renderAll();
-  showToast('입사·퇴사 반영일 추가 완료');
+  showToast('입사·퇴사·팀장승급 반영일 추가 완료');
 }
 
 function removePersonnelChange(idx) {
@@ -2718,7 +2720,7 @@ function removePersonnelChange(idx) {
     state.scheduleAnchors = (state.scheduleAnchors || []).filter(anchor => !(anchor.date === removed.date && anchor.name === removed.name));
   }
   saveData(); rebuildSchedule(); renderAll();
-  showToast('입사·퇴사 반영일 삭제 완료');
+  showToast('입사·퇴사·팀장승급 반영일 삭제 완료');
 }
 
 function renderHolidays() {
