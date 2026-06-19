@@ -1404,7 +1404,7 @@ let DEFAULT_HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DEFAULT_DUTY_COMMON_DATA = [];
 let DEFAULT_DUTY_HUMI_DATA = [];
 let DEFAULT_DUTY_NOTES_DATA = [];
-const SCHEDULE_VERSION = '2026-06-new-hire-settings-v6';
+const SCHEDULE_VERSION = '2026-06-new-hire-settings-v7';
 const LEGACY_DEFAULT_EMPLOYEES = [
   "박수빈", "최수연", "송지은", "김휘원", "김유리",
   "최유나", "김주진", "김은서", "권은지", "조승민",
@@ -1521,7 +1521,9 @@ function mergeByDateName(currentItems = [], defaultItems = []) {
 }
 
 function mergePersonnelChanges(currentChanges = [], defaultChanges = []) {
-  const merged = Array.isArray(currentChanges) ? [...currentChanges] : [];
+  const defaultJoinNames = new Set(defaultChanges.filter(change => change.type === 'join').map(change => change.name));
+  const merged = (Array.isArray(currentChanges) ? currentChanges : [])
+    .filter(change => !(change.type === 'join' && defaultJoinNames.has(change.name)));
   defaultChanges.forEach(change => {
     if (!merged.some(existing =>
       existing?.date === change?.date &&
@@ -1532,6 +1534,14 @@ function mergePersonnelChanges(currentChanges = [], defaultChanges = []) {
     }
   });
   return merged;
+}
+
+function mergeScheduleAnchors(currentAnchors = [], defaultAnchors = []) {
+  const defaultDates = new Set(defaultAnchors.map(anchor => anchor.date));
+  return [
+    ...(Array.isArray(currentAnchors) ? currentAnchors : []).filter(anchor => !defaultDates.has(anchor.date)),
+    ...defaultAnchors.map(anchor => ({ ...anchor }))
+  ];
 }
 
 function sameJson(a, b) {
@@ -2897,7 +2907,7 @@ function renderAll() {
   if (saved) {
     const mergedPersonnelChanges = mergePersonnelChanges(saved.personnelChanges, DEFAULT_PERSONNEL_CHANGES);
     const mergedHolidays = mergeByDateName(saved.holidays, DEFAULT_HOLIDAYS);
-    const mergedAnchors = mergeByDateName(saved.scheduleAnchors, DEFAULT_SCHEDULE_ANCHORS);
+    const mergedAnchors = mergeScheduleAnchors(saved.scheduleAnchors, DEFAULT_SCHEDULE_ANCHORS);
     if (
       !sameJson(saved.personnelChanges, mergedPersonnelChanges) ||
       !sameJson(saved.holidays, mergedHolidays) ||
