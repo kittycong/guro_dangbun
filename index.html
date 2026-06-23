@@ -1272,7 +1272,7 @@ body {
     <div class="card wide-card">
       <div class="card-header">🧑‍💼 입사·퇴사·팀장승급 반영일 관리</div>
       <div class="card-body">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">입사자는 반영일부터 당번에 투입되고, 퇴사·팀장승급자는 반영일부터 제외됩니다. 반영일 이전의 기존 순서에는 영향을 주지 않습니다.</p>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">입사자는 반영일부터 당번에 투입되고, 퇴사·팀장승급자는 반영일부터 제외됩니다. 제외된 자리 뒤의 직원이 자동으로 앞당겨지며, 이전 당번 순서에는 영향을 주지 않습니다.</p>
         <ul id="personnelChangeList" style="list-style:none;max-height:220px;overflow-y:auto"></ul>
         <div class="input-row" style="flex-wrap:wrap">
           <input class="input-field" type="date" id="newChangeDate" style="max-width:160px">
@@ -1658,6 +1658,18 @@ function nextEmployeeName(currentName, employees, step) {
   return employees[(idx + step + employees.length) % employees.length];
 }
 
+// 퇴사·승급으로 현재 순번이 제외된 경우, 기존 순서에서 바로 다음 재직자를 찾는다.
+function nextActiveEmployeeAfterRemoval(currentName, previousEmployees, activeEmployees) {
+  const idx = previousEmployees.indexOf(currentName);
+  if (idx === -1) return activeEmployees[0] || null;
+
+  for (let offset = 1; offset < previousEmployees.length; offset++) {
+    const candidate = previousEmployees[(idx + offset) % previousEmployees.length];
+    if (activeEmployees.includes(candidate)) return candidate;
+  }
+  return activeEmployees[0] || null;
+}
+
 function getEmployeeTeam(name) {
   const team = state.employeeTeams?.[name] || '';
   if (team === '행정팀') return '사무행정팀';
@@ -1706,6 +1718,11 @@ function buildScheduleMap() {
   const spDate = new Date(sp.date + 'T00:00:00');
   const startEmployees = activeEmployeesOn(sp.date);
   let currentName = state.employees[sp.empIndex] || startEmployees[0];
+  const dayBeforeStart = new Date(spDate);
+  dayBeforeStart.setDate(dayBeforeStart.getDate() - 1);
+  let previousActive = activeEmployeesOn(dateStr(
+    dayBeforeStart.getFullYear(), dayBeforeStart.getMonth() + 1, dayBeforeStart.getDate()
+  ));
 
   // sp.date 이후로 순방향 채우기
   let cur = new Date(spDate);
@@ -1717,10 +1734,13 @@ function buildScheduleMap() {
       if (active.length) {
         const anchorName = getScheduleAnchor(ds);
         if (anchorName && active.includes(anchorName)) currentName = anchorName;
-        const hyu = active.includes(currentName) ? currentName : active[0];
+        const hyu = active.includes(currentName)
+          ? currentName
+          : nextActiveEmployeeAfterRemoval(currentName, previousActive, active);
         const ga = active[(active.indexOf(hyu) + 1) % active.length];
         map[ds] = { hyu, ga };
         currentName = nextEmployeeName(hyu, active, 1);
+        previousActive = active;
       }
     }
     cur.setDate(cur.getDate() + 1);
@@ -2705,6 +2725,11 @@ function addPersonnelChange() {
   if (type === 'join' && anchorOnDate) {
     state.scheduleAnchors = (state.scheduleAnchors || []).filter(anchor => anchor.date !== date);
     state.scheduleAnchors.push({ date, name });
+    state.manualDuties = filterManualDutiesBefore(state.manualDuties, date);
+  }
+  if (type === 'leave' || type === 'promote') {
+    // 이후에 고정된 일정이나 수동 교체가 남아 있으면 자동 당김이 보이지 않으므로 재계산한다.
+    state.scheduleAnchors = (state.scheduleAnchors || []).filter(anchor => anchor.date < date);
     state.manualDuties = filterManualDutiesBefore(state.manualDuties, date);
   }
   document.getElementById('newChangeDate').value = '';
