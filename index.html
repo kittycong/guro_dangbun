@@ -1243,7 +1243,7 @@ body {
         <button class="btn btn-sm btn-ghost" onclick="resetEmployees()">초기화</button>
       </div>
       <div class="card-body">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">5월 기준 기본 순서입니다. 입사·퇴사 예정자는 여기서 추가/삭제하지 말고 아래 반영일 관리에 등록하세요.</p>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px">기존 직원과 입사 예정자를 포함한 전체 순서입니다. 아래 반영일 관리에서 입사를 등록하면 지정 위치에 자동 추가되며, 퇴사·승급자는 목록에 기록으로 남습니다.</p>
         <ul class="emp-list" id="empList"></ul>
         <div class="input-row">
           <input class="input-field" id="newEmpName" placeholder="직원 이름 입력" maxlength="10">
@@ -1624,12 +1624,17 @@ function applySettingsPayload(data) {
     integrationConfig = { ...integrationConfig, ...data.integrationConfig };
   }
 
+  syncJoinedEmployeesIntoRoster();
   normalizeStartPoint();
 }
 
 function activeEmployeesOn(targetDateStr) {
-  let employees = [...state.employees];
-  const changes = [...(state.personnelChanges || [])]
+  const allChanges = [...(state.personnelChanges || [])];
+  const futureJoinNames = new Set(allChanges
+    .filter(ch => ch.type === 'join' && ch.date > targetDateStr)
+    .map(ch => String(ch.name || '').trim()));
+  let employees = state.employees.filter(name => !futureJoinNames.has(name));
+  const changes = allChanges
     .filter(ch => ch.date <= targetDateStr)
     .sort((a,b) => a.date.localeCompare(b.date));
 
@@ -1645,6 +1650,37 @@ function activeEmployeesOn(targetDateStr) {
   });
 
   return employees;
+}
+
+function insertEmployeeIntoRoster(name, after = '') {
+  if (state.employees.includes(name)) return false;
+  const afterIdx = after ? state.employees.indexOf(after) : -1;
+  if (afterIdx >= 0) state.employees.splice(afterIdx + 1, 0, name);
+  else state.employees.push(name);
+  return true;
+}
+
+function syncJoinedEmployeesIntoRoster() {
+  let changed = false;
+  [...(state.personnelChanges || [])]
+    .filter(ch => ch.type === 'join')
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .forEach(ch => {
+      const name = String(ch.name || '').trim();
+      if (name && insertEmployeeIntoRoster(name, ch.after || '')) changed = true;
+    });
+  return changed;
+}
+
+function employeePersonnelStatus(name) {
+  const latest = [...(state.personnelChanges || [])]
+    .filter(ch => ch.name === name)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .pop();
+  if (!latest) return '';
+  if (latest.type === 'leave') return `퇴사 ${latest.date}`;
+  if (latest.type === 'promote') return `팀장승급 ${latest.date}`;
+  return `입사 ${latest.date}`;
 }
 
 function getScheduleAnchor(dateStr) {
@@ -2566,13 +2602,14 @@ function renderEmployees() {
   const ul = document.getElementById('empList');
   ul.innerHTML = '';
   state.employees.forEach((name, idx) => {
+    const status = employeePersonnelStatus(name);
     const li = document.createElement('li');
     li.className = 'emp-item';
     li.draggable = true;
     li.dataset.idx = idx;
     li.innerHTML = `
       <div class="emp-num">${idx+1}</div>
-      <div class="emp-name">${escapeHtml(name)}</div>
+      <div class="emp-name">${escapeHtml(name)}${status ? `<br><small style="font-weight:600;color:var(--text2)">${escapeHtml(status)}</small>` : ''}</div>
       <select class="team-select ${getTeamClass(name)}" onchange="updateEmployeeTeam(${idx}, this.value)">
         ${teamOptions(getEmployeeTeam(name))}
       </select>
@@ -2655,6 +2692,7 @@ function resetEmployees() {
   if (!confirm('직원 목록을 초기값으로 되돌릴까요?')) return;
   state.employees = [...DEFAULT_EMPLOYEES];
   state.employeeTeams = {};
+  syncJoinedEmployeesIntoRoster();
   normalizeStartPoint();
   saveData(); rebuildSchedule(); renderAll();
   showToast('직원 목록 초기화 완료');
@@ -2714,7 +2752,9 @@ function addPersonnelChange() {
 
   if (!date || !name) return showToast('반영일과 직원 이름을 입력하세요');
   if (!['join', 'leave', 'promote'].includes(type)) return showToast('입사, 퇴사 또는 팀장승급을 선택하세요');
-  if (type === 'join' && state.employees.includes(name)) return showToast('기본 직원 목록에 이미 있는 이름입니다');
+  if (type === 'join' && state.employees.includes(name) && !state.personnelChanges.some(ch =>
+    ch.name === name && (ch.type === 'leave' || ch.type === 'promote') && ch.date < date
+  )) return showToast('전체 순서 목록에 이미 있는 직원입니다');
   if (state.personnelChanges.some(ch => ch.date === date && ch.type === type && ch.name === name)) {
     return showToast('이미 등록된 인사 변경입니다');
   }
@@ -2722,6 +2762,7 @@ function addPersonnelChange() {
   const change = { date, type, name };
   if (type === 'join' && after) change.after = after;
   state.personnelChanges.push(change);
+  if (type === 'join') insertEmployeeIntoRoster(name, after);
   if (type === 'join' && anchorOnDate) {
     state.scheduleAnchors = (state.scheduleAnchors || []).filter(anchor => anchor.date !== date);
     state.scheduleAnchors.push({ date, name });
@@ -2743,6 +2784,12 @@ function removePersonnelChange(idx) {
   const [removed] = state.personnelChanges.splice(idx, 1);
   if (removed) {
     state.scheduleAnchors = (state.scheduleAnchors || []).filter(anchor => !(anchor.date === removed.date && anchor.name === removed.name));
+    if (removed.type === 'join' && !DEFAULT_EMPLOYEES.includes(removed.name) &&
+      !state.personnelChanges.some(ch => ch.type === 'join' && ch.name === removed.name)) {
+      state.employees = state.employees.filter(name => name !== removed.name);
+      delete state.employeeTeams[removed.name];
+      normalizeStartPoint();
+    }
   }
   saveData(); rebuildSchedule(); renderAll();
   showToast('입사·퇴사·팀장승급 반영일 삭제 완료');
@@ -2961,7 +3008,10 @@ function renderAll() {
   DUTY_HUMI_DATA    = saved?.dutyHumi ? cloneDutyItems(saved.dutyHumi) : DUTY_HUMI_DATA;
   DUTY_NOTES_DATA   = saved?.dutyNotes ? cloneDutyItems(saved.dutyNotes) : DUTY_NOTES_DATA;
   integrationConfig = saved?.integrationConfig ? { ...integrationConfig, ...saved.integrationConfig } : integrationConfig;
+  const rosterSynced = syncJoinedEmployeesIntoRoster();
   normalizeStartPoint();
+
+  if (rosterSynced) saveData();
 
   rebuildSchedule();
   renderAll();
