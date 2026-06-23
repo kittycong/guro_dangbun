@@ -316,6 +316,20 @@ body {
   cursor: pointer;
 }
 .duty-edit-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+.personnel-edit-btn {
+  margin-top: 4px;
+  width: 100%;
+  border: 1px dashed var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  border-radius: 8px;
+  padding: 3px 6px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.personnel-edit-btn:hover { background: var(--gold-light); border-color: var(--gold); color: var(--gold); }
 .team-worker { background: #E5E7EB !important; color: #374151 !important; border-color: #C7CBD1 !important; }
 .team-admin { background: #FFE4EF !important; color: #9D174D !important; border-color: #F9A8C7 !important; }
 .team-support { background: #DCFCE7 !important; color: #166534 !important; border-color: #86EFAC !important; }
@@ -1392,6 +1406,48 @@ body {
   </div>
 </div>
 
+<div class="modal-backdrop" id="calendarPersonnelModal" onclick="handleCalendarPersonnelBackdrop(event)">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span id="calendarPersonnelTitle">날짜별 입·퇴사 설정</span>
+      <button class="btn btn-sm btn-ghost" style="color:white;border-color:rgba(255,255,255,0.45)" onclick="closeCalendarPersonnelModal()">닫기</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="calendarPersonnelDate">
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">반영일</label>
+        <input class="input-field" id="calendarPersonnelDateLabel" readonly>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">처리 유형</label>
+        <select class="input-field" id="calendarPersonnelType" onchange="toggleCalendarPersonnelJoinOptions()">
+          <option value="join">입사</option>
+          <option value="leave">퇴사</option>
+          <option value="promote">팀장승급</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">직원 이름</label>
+        <input class="input-field" id="calendarPersonnelName" placeholder="직원 이름" maxlength="10">
+      </div>
+      <div id="calendarPersonnelJoinOptions">
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:4px">전체 순서 위치</label>
+          <select class="input-field" id="calendarPersonnelAfter"></select>
+        </div>
+        <label class="check-pill" style="margin-bottom:4px">
+          <input type="checkbox" id="calendarPersonnelAnchor" checked>
+          반영일 당일 이 사람부터 시작
+        </label>
+      </div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-top:12px">퇴사·팀장승급은 해당 날짜부터 당번에서 제외되고, 다음 직원이 자동으로 앞당겨집니다.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveCalendarPersonnelChange()">저장</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════
 //  STATE
@@ -1975,6 +2031,17 @@ function renderMonthGrid(gridId, y, m) {
       cell.appendChild(editBtn);
     }
 
+    const personnelBtn = document.createElement('button');
+    personnelBtn.className = 'personnel-edit-btn';
+    personnelBtn.type = 'button';
+    personnelBtn.textContent = '입·퇴사';
+    personnelBtn.title = '이 날짜부터 입사, 퇴사 또는 팀장승급 처리';
+    personnelBtn.onclick = ev => {
+      ev.stopPropagation();
+      openCalendarPersonnelModal(ds);
+    };
+    cell.appendChild(personnelBtn);
+
     if (cleaningTeam) {
       const cleanChip = document.createElement('div');
       cleanChip.className = ['clean-chip', getTeamColorClass(cleaningTeam)].filter(Boolean).join(' ');
@@ -2098,6 +2165,41 @@ function closeManualDutyModal() {
 
 function handleManualDutyBackdrop(event) {
   if (event.target.id === 'manualDutyModal') closeManualDutyModal();
+}
+
+function openCalendarPersonnelModal(ds) {
+  document.getElementById('calendarPersonnelDate').value = ds;
+  document.getElementById('calendarPersonnelDateLabel').value = ds;
+  document.getElementById('calendarPersonnelTitle').textContent = `${ds}부터 입·퇴사 설정`;
+  document.getElementById('calendarPersonnelType').value = 'join';
+  document.getElementById('calendarPersonnelName').value = '';
+  document.getElementById('calendarPersonnelAnchor').checked = true;
+  populatePersonnelAfterOptions(document.getElementById('calendarPersonnelAfter'));
+  toggleCalendarPersonnelJoinOptions();
+  document.getElementById('calendarPersonnelModal').classList.add('open');
+}
+
+function closeCalendarPersonnelModal() {
+  document.getElementById('calendarPersonnelModal').classList.remove('open');
+}
+
+function handleCalendarPersonnelBackdrop(event) {
+  if (event.target.id === 'calendarPersonnelModal') closeCalendarPersonnelModal();
+}
+
+function toggleCalendarPersonnelJoinOptions() {
+  const isJoin = document.getElementById('calendarPersonnelType').value === 'join';
+  document.getElementById('calendarPersonnelJoinOptions').style.display = isJoin ? '' : 'none';
+}
+
+function saveCalendarPersonnelChange() {
+  const date = document.getElementById('calendarPersonnelDate').value;
+  const type = document.getElementById('calendarPersonnelType').value;
+  const name = document.getElementById('calendarPersonnelName').value.trim();
+  const after = document.getElementById('calendarPersonnelAfter').value;
+  const anchorOnDate = document.getElementById('calendarPersonnelAnchor').checked;
+  if (!registerPersonnelChange({ date, type, name, after, anchorOnDate })) return;
+  closeCalendarPersonnelModal();
 }
 
 function saveManualDuty() {
@@ -2754,6 +2856,10 @@ function renderPersonnelChanges() {
 function renderPersonnelChangeAfterOptions() {
   const select = document.getElementById('newChangeAfter');
   if (!select) return;
+  populatePersonnelAfterOptions(select);
+}
+
+function populatePersonnelAfterOptions(select) {
   const selected = select.value;
   const names = new Set([...(state.employees || [])]);
   (state.personnelChanges || [])
@@ -2765,13 +2871,7 @@ function renderPersonnelChangeAfterOptions() {
   if ([...names].includes(selected)) select.value = selected;
 }
 
-function addPersonnelChange() {
-  const date = document.getElementById('newChangeDate').value;
-  const type = document.getElementById('newChangeType').value;
-  const name = document.getElementById('newChangeName').value.trim();
-  const after = document.getElementById('newChangeAfter')?.value || '';
-  const anchorOnDate = Boolean(document.getElementById('newChangeAnchor')?.checked);
-
+function registerPersonnelChange({ date, type, name, after = '', anchorOnDate = false }) {
   if (!date || !name) return showToast('반영일과 직원 이름을 입력하세요');
   if (!['join', 'leave', 'promote'].includes(type)) return showToast('입사, 퇴사 또는 팀장승급을 선택하세요');
   if (type === 'join' && state.employees.includes(name) && !state.personnelChanges.some(ch =>
@@ -2795,11 +2895,22 @@ function addPersonnelChange() {
     state.scheduleAnchors = (state.scheduleAnchors || []).filter(anchor => anchor.date < date);
     state.manualDuties = filterManualDutiesBefore(state.manualDuties, date);
   }
+  saveData(); rebuildSchedule(); renderAll();
+  showToast('입사·퇴사·팀장승급 반영일 추가 완료');
+  saveSharedSettingsIfConfigured();
+  return true;
+}
+
+function addPersonnelChange() {
+  const date = document.getElementById('newChangeDate').value;
+  const type = document.getElementById('newChangeType').value;
+  const name = document.getElementById('newChangeName').value.trim();
+  const after = document.getElementById('newChangeAfter')?.value || '';
+  const anchorOnDate = Boolean(document.getElementById('newChangeAnchor')?.checked);
+  if (!registerPersonnelChange({ date, type, name, after, anchorOnDate })) return;
   document.getElementById('newChangeDate').value = '';
   document.getElementById('newChangeName').value = '';
   if (document.getElementById('newChangeAfter')) document.getElementById('newChangeAfter').value = '';
-  saveData(); rebuildSchedule(); renderAll();
-  showToast('입사·퇴사·팀장승급 반영일 추가 완료');
 }
 
 function removePersonnelChange(idx) {
