@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>구로자립생활센터 당번표</title>
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1680,16 +1681,18 @@ function applySettingsPayload(data) {
   if (data.employeeTeams) state.employeeTeams = data.employeeTeams;
   if (data.holidays) state.holidays = data.holidays.filter(h => h?.date && h?.name);
   if (data.personnelChanges) {
-    state.personnelChanges = data.personnelChanges
+    const importedPersonnelChanges = data.personnelChanges
       .filter(ch => ch?.date && ch?.name && ['join', 'leave', 'promote'].includes(ch.type))
       .map(ch => ({ date: String(ch.date), type: ch.type, name: String(ch.name).trim(), after: ch.after ? String(ch.after).trim() : '' }))
       .filter(ch => ch.name);
+    state.personnelChanges = mergePersonnelChanges(importedPersonnelChanges, DEFAULT_PERSONNEL_CHANGES);
   }
   if (data.scheduleAnchors) {
-    state.scheduleAnchors = data.scheduleAnchors
+    const importedScheduleAnchors = data.scheduleAnchors
       .filter(anchor => anchor?.date && anchor?.name)
       .map(anchor => ({ date: String(anchor.date), name: String(anchor.name).trim() }))
       .filter(anchor => anchor.name);
+    state.scheduleAnchors = mergeScheduleAnchors(importedScheduleAnchors, DEFAULT_SCHEDULE_ANCHORS);
   }
   if (data.startPoint) state.startPoint = data.startPoint;
   if (data.manualDuties) state.manualDuties = data.manualDuties;
