@@ -1455,6 +1455,7 @@ body {
 // ══════════════════════════════════════════
 // ── 기본값 (JSON 로드 실패 시 폴백) ──
 let DEFAULT_EMPLOYEES = [];
+let DEFAULT_EMPLOYEE_TEAMS = {};
 let DEFAULT_HOLIDAYS = [];
 let DEFAULT_PERSONNEL_CHANGES = [];
 let DEFAULT_SCHEDULE_ANCHORS = [];
@@ -1463,7 +1464,7 @@ let DEFAULT_HUMI_MONTHS = [9, 10, 11, 12, 1];
 let DEFAULT_DUTY_COMMON_DATA = [];
 let DEFAULT_DUTY_HUMI_DATA = [];
 let DEFAULT_DUTY_NOTES_DATA = [];
-const SCHEDULE_VERSION = '2026-07-promotion-exclusion-v9';
+const SCHEDULE_VERSION = '2026-08-jiwon-welfare-v1';
 const CANCELLED_PERSONNEL_NAME = '이소영';
 const CANCELLED_PERSONNEL_EFFECTIVE_DATE = '2026-06-29';
 const LEGACY_DEFAULT_EMPLOYEES = [
@@ -1618,11 +1619,12 @@ function filterManualDutiesBefore(manualDuties = {}, beforeDate = '2026-06-01') 
 function applyPhotoOrderDefaults(saved) {
   if (!saved) return saved;
   saved.employees = [...DEFAULT_EMPLOYEES];
+  saved.employeeTeams = { ...DEFAULT_EMPLOYEE_TEAMS };
   saved.startPoint = { ...DEFAULT_START };
   saved.personnelChanges = [...DEFAULT_PERSONNEL_CHANGES];
   saved.scheduleAnchors = [...DEFAULT_SCHEDULE_ANCHORS];
   saved.holidays = mergeByDateName(saved.holidays, DEFAULT_HOLIDAYS);
-  saved.manualDuties = filterManualDutiesBefore(saved.manualDuties, '2026-06-01');
+  saved.manualDuties = filterManualDutiesBefore(saved.manualDuties, '2026-07-01');
   saved.scheduleVersion = SCHEDULE_VERSION;
   return saved;
 }
@@ -2818,7 +2820,7 @@ function reorderEmployee(fromIdx, toIdx) {
 function resetEmployees() {
   if (!confirm('직원 목록을 초기값으로 되돌릴까요?')) return;
   state.employees = [...DEFAULT_EMPLOYEES];
-  state.employeeTeams = {};
+  state.employeeTeams = { ...DEFAULT_EMPLOYEE_TEAMS };
   syncJoinedEmployeesIntoRoster();
   normalizeStartPoint();
   saveData(); rebuildSchedule(); renderAll();
@@ -3009,7 +3011,7 @@ function clearSavedData() {
   if (!confirm('브라우저에 저장된 설정값을 삭제하고 기본값으로 되돌릴까요?')) return;
   localStorage.removeItem('danbun_v2');
   state.employees = [...DEFAULT_EMPLOYEES];
-  state.employeeTeams = {};
+  state.employeeTeams = { ...DEFAULT_EMPLOYEE_TEAMS };
   state.holidays = [...DEFAULT_HOLIDAYS];
   state.personnelChanges = [...DEFAULT_PERSONNEL_CHANGES];
   state.scheduleAnchors = [...DEFAULT_SCHEDULE_ANCHORS];
@@ -3084,6 +3086,7 @@ function renderAll() {
     const json = await res.json();
 
     DEFAULT_EMPLOYEES = json.employees || [];
+    DEFAULT_EMPLOYEE_TEAMS = json.employeeTeams || {};
     DEFAULT_HOLIDAYS  = json.holidays  || [];
     DEFAULT_PERSONNEL_CHANGES = json.personnelChanges || [];
     DEFAULT_SCHEDULE_ANCHORS = json.scheduleAnchors || [];
@@ -3127,13 +3130,13 @@ function renderAll() {
       saved.personnelChanges = mergedPersonnelChanges;
       saved.holidays = mergedHolidays;
       saved.scheduleAnchors = mergedAnchors;
-      if (anchorsChanged) saved.manualDuties = filterManualDutiesBefore(saved.manualDuties, '2026-06-01');
+      if (anchorsChanged) saved.manualDuties = filterManualDutiesBefore(saved.manualDuties, '2026-07-01');
       saved.scheduleVersion = SCHEDULE_VERSION;
       localStorage.setItem('danbun_v2', JSON.stringify(saved));
     }
   }
   state.employees  = saved?.employees  || [...DEFAULT_EMPLOYEES];
-  state.employeeTeams = saved?.employeeTeams || {};
+  state.employeeTeams = saved?.employeeTeams || { ...DEFAULT_EMPLOYEE_TEAMS };
   state.holidays   = saved?.holidays   || [...DEFAULT_HOLIDAYS];
   state.personnelChanges = saved?.personnelChanges || [...DEFAULT_PERSONNEL_CHANGES];
   state.scheduleAnchors = saved?.scheduleAnchors || [...DEFAULT_SCHEDULE_ANCHORS];
