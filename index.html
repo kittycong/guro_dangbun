@@ -800,12 +800,7 @@ body {
 }
 .toast.show { opacity: 1; transform: translateY(0); }
 
-/* print */
-@media print {
-  .nav-tabs, .app-header, .today-banner, .duty-guide-card { display: none; }
-  .page { display: block !important; padding: 0; }
-  .cal-cell { min-height: 60px; }
-}
+/* print: see the single @media print block below */
 
 /* Larger ocean theme readability overrides */
 .nav-tabs { top: 78px; padding: 0 20px; }
@@ -932,37 +927,35 @@ body {
 @media print {
   @page { size: A4 portrait; margin: 10mm; }
   html, body {
-    width: 190mm;
-    height: 277mm;
-    margin: 0 auto !important;
+    width: auto;
+    height: auto;
+    margin: 0 !important;
     padding: 0 !important;
-    overflow: hidden !important;
     background: white !important;
     font-size: 12px;
   }
-  body * { visibility: hidden; }
-  #printSheet, #printSheet * { visibility: visible; }
+  /* only the print sheet generates page boxes -> exactly 1 page */
+  body > *:not(#page-print) { display: none !important; }
+  #page-print {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  #page-print > *:not(#printSheet) { display: none !important; }
   #printSheet {
-    position: fixed;
-    left: 50%;
-    top: 0;
-    transform: translateX(-50%);
+    position: static;
     width: 190mm;
-    height: 277mm;
+    height: auto;
     min-height: 0;
     margin: 0 auto !important;
     padding: 0;
     box-shadow: none;
     overflow: hidden;
   }
-  .page, #page-print {
-    width: 190mm !important;
-    height: 277mm !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-  }
-  .print-controls, .nav-tabs, .app-header, .toast, .section-title, .section-sub { display: none !important; }
+  .print-duty-section { break-inside: avoid; }
 }
 </style>
 </head>
@@ -2304,7 +2297,22 @@ function buildPrintDutySection(title, items, ordered) {
 
 function printDutySheet() {
   renderPrintPage();
+  fitPrintSheet();
   window.print();
+}
+
+// shrink the sheet so it always fits one A4 page (210x297mm minus 10mm margins)
+function fitPrintSheet() {
+  const sheet = document.getElementById('printSheet');
+  if (!sheet) return;
+  sheet.style.zoom = '';
+  const saved = sheet.getAttribute('style') || '';
+  sheet.style.minHeight = '0';
+  sheet.style.padding = '0';
+  const contentPx = sheet.scrollHeight;
+  sheet.setAttribute('style', saved);
+  const pagePx = 277 / 25.4 * 96; // printable height in CSS px
+  sheet.style.zoom = contentPx > pagePx ? (pagePx / contentPx).toFixed(3) : '';
 }
 
 // ══════════════════════════════════════════
