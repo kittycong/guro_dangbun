@@ -1458,8 +1458,10 @@ let DEFAULT_DUTY_COMMON_DATA = [];
 let DEFAULT_DUTY_HUMI_DATA = [];
 let DEFAULT_DUTY_NOTES_DATA = [];
 const SCHEDULE_VERSION = '2026-08-jiwon-leave-v1';
-const CANCELLED_PERSONNEL_NAME = '이소영';
-const CANCELLED_PERSONNEL_EFFECTIVE_DATE = '2026-06-29';
+const CANCELLED_PERSONNEL = [
+  { name: '이소영', date: '2026-06-29' },
+  { name: '이지원', date: '2026-08-03' },
+];
 const LEGACY_DEFAULT_EMPLOYEES = [
   "박수빈", "최수연", "송지은", "김휘원", "김유리",
   "최유나", "김주진", "김은서", "권은지", "조승민",
@@ -1624,20 +1626,24 @@ function applyPhotoOrderDefaults(saved) {
 
 function removeCancelledPersonnelFromState() {
   let changed = false;
-  const previousChangeCount = state.personnelChanges.length;
-  state.personnelChanges = state.personnelChanges.filter(change => change.name !== CANCELLED_PERSONNEL_NAME);
-  if (state.personnelChanges.length !== previousChangeCount) changed = true;
+  CANCELLED_PERSONNEL.forEach(({ name, date }) => {
+    const previousChangeCount = state.personnelChanges.length;
+    // 입사 기록만 제거한다. 퇴사 기록은 이력으로 남긴다.
+    state.personnelChanges = state.personnelChanges.filter(change => !(change.name === name && change.type === 'join'));
+    let hit = state.personnelChanges.length !== previousChangeCount;
 
-  if (state.employees.includes(CANCELLED_PERSONNEL_NAME)) {
-    state.employees = state.employees.filter(name => name !== CANCELLED_PERSONNEL_NAME);
-    delete state.employeeTeams[CANCELLED_PERSONNEL_NAME];
-    changed = true;
-  }
+    if (state.employees.includes(name)) {
+      state.employees = state.employees.filter(employee => employee !== name);
+      delete state.employeeTeams[name];
+      hit = true;
+    }
 
-  if (changed) {
-    state.scheduleAnchors = state.scheduleAnchors.filter(anchor => anchor.date < CANCELLED_PERSONNEL_EFFECTIVE_DATE);
-    state.manualDuties = filterManualDutiesBefore(state.manualDuties, CANCELLED_PERSONNEL_EFFECTIVE_DATE);
-  }
+    if (hit) {
+      state.scheduleAnchors = state.scheduleAnchors.filter(anchor => anchor.date < date);
+      state.manualDuties = filterManualDutiesBefore(state.manualDuties, date);
+      changed = true;
+    }
+  });
   return changed;
 }
 
@@ -3089,7 +3095,7 @@ function renderAll() {
 
   // JSON 파일 로드
   try {
-    const res = await fetch('danbun_data.json');
+    const res = await fetch(`danbun_data.json?v=${SCHEDULE_VERSION}`);
     if (!res.ok) throw new Error('fetch failed');
     const json = await res.json();
 
