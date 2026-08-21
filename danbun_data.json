@@ -4,9 +4,7 @@
     "주덕원", "최수연", "김휘원", "최유나", "송지은",
     "김유리", "김주진"
   ],
-  "employeeTeams": {
-    "이지원": "복지사업팀"
-  },
+  "employeeTeams": {},
   "startPoint": {
     "date": "2026-06-01",
     "empIndex": 0
@@ -18,7 +16,7 @@
     { "date": "2026-07-01", "type": "promote", "name": "김은서" },
     { "date": "2026-07-13", "type": "join", "name": "김은서", "after": "노현숙" },
     { "date": "2026-07-01", "type": "leave", "name": "송지은" },
-    { "date": "2026-08-03", "type": "join", "name": "이지원", "after": "정채윤" }
+    { "date": "2026-07-03", "type": "leave", "name": "이지원" }
   ],
   "scheduleAnchors": [
     { "date": "2026-06-01", "name": "김은서" },
@@ -63,8 +61,7 @@
     { "date": "2026-07-28", "name": "조승민" },
     { "date": "2026-07-29", "name": "노현숙" },
     { "date": "2026-07-30", "name": "김은서" },
-    { "date": "2026-07-31", "name": "정채윤" },
-    { "date": "2026-08-03", "name": "이지원" }
+    { "date": "2026-07-31", "name": "정채윤" }
   ],
   "humiMonths": [9, 10, 11, 12, 1],
   "holidays": [
